@@ -1,9 +1,9 @@
 # cs645-labs
 
 ### group members
-- Priyanka Gupta
+- Priyanka Gupta (priyankagpta)
 - Evan Ciccarelli (eciccarelli0016)
-- Tanvi Agarwal
+- Tanvi Agarwal (tanviagarwal15)
 - Matthew Richardson (06tron)
 
 ### teaching and course assistants
