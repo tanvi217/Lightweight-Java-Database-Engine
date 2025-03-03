@@ -1,21 +1,21 @@
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
 public class LRUBufferManager extends BufferManager {
 
     private Map<Integer, Integer> frameMap;
-    private List<Page> allPages;
+    private Page[] bufferPool;
     private boolean[] isDirty;
     private int[] pinCount;
+    private int pageCount;
 
     public LRUBufferManager(int numFrames) {
         super(numFrames);
         frameMap = new LinkedHashMap<>(1 + (bufferSize * 4) / 3, 0.75f, false);
-        allPages = new ArrayList<>();
+        bufferPool = new Page[bufferSize];
         isDirty = new boolean[bufferSize];
         pinCount = new int[bufferSize];
+        pageCount = 0;
     }
 
     private int getEmptyFrame() {
@@ -24,18 +24,16 @@ public class LRUBufferManager extends BufferManager {
 
     @Override
     Page getPage(int pageId) {
-        Page target = allPages.get(pageId);
         int frameIndex = frameMap.containsKey(pageId) ? frameMap.get(pageId) : getEmptyFrame();
         pinCount[frameIndex] += 1;
         frameMap.remove(pageId);
         frameMap.put(pageId, frameIndex);
-        return target;
+        return null; // return page object
     }
 
     @Override
     Page createPage() {
-        int pageId = allPages.size();
-        allPages.add(new UnnamedPage());
+        int pageId = pageCount++;
         return getPage(pageId);
     }
 
