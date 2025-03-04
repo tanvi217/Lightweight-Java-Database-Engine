@@ -1,9 +1,9 @@
-import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Iterator;
 
 public class LRUBufferManager extends BufferManager {
 
-    private Map<Integer, Integer> frameMap;
+    private LinkedHashMap<Integer, Integer> frameMap;
     private Page[] bufferPool;
     private boolean[] isDirty;
     private int[] pinCount;
@@ -18,36 +18,60 @@ public class LRUBufferManager extends BufferManager {
         pageCount = 0;
     }
 
-    private int getEmptyFrame() {
-        return 0;
-    }
-
     @Override
-    Page getPage(int pageId) {
-        int frameIndex = frameMap.containsKey(pageId) ? frameMap.get(pageId) : getEmptyFrame();
-        pinCount[frameIndex] += 1;
-        frameMap.remove(pageId);
+    public Page getPage(int pageId) {
+        int frameIndex = -1;
+        if (frameMap.containsKey(pageId)) {
+            frameIndex = frameMap.get(pageId);
+            frameMap.remove(pageId); // removal to allow reinsertion
+        } else {
+            Iterator<Integer> lruPageIds = frameMap.keySet().iterator();
+            while (true) { // loop to find page eligible for eviction
+                if (!lruPageIds.hasNext()) {
+                    // throw exception
+                }
+                int pId = lruPageIds.next();
+                int fIdx = frameMap.get(pId);
+                if (pinCount[fIdx] == 0) { // if page can be removed
+                    if (isDirty[fIdx]) {
+                        writePageToDisk(pId, bufferPool[fIdx]);
+                    }
+                    frameIndex = fIdx;
+                    break;
+                }
+            }
+            bufferPool[frameIndex] = readPageFromDisk(pageId);
+        }
         frameMap.put(pageId, frameIndex);
-        return null; // return page object
+        pinCount[frameIndex] += 1;
+        return bufferPool[frameIndex];
     }
 
     @Override
-    Page createPage() {
+    public Page createPage() {
         int pageId = pageCount++;
-        return getPage(pageId);
+        Page pageObject = getPage(pageId);
+        int frameIndex = frameMap.get(pageId);
+        isDirty[frameIndex] = true;
+        return pageObject;
     }
 
     @Override
-    void markDirty(int pageId) {
+    public void markDirty(int pageId) {
         if (frameMap.containsKey(pageId)) {
             int frameIndex = frameMap.get(pageId);
             isDirty[frameIndex] = true;
         }
+        // else throw error
     }
 
     @Override
-    void unpinPage(int pageId) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void unpinPage(int pageId) {
+        if (frameMap.containsKey(pageId)) {
+            int frameIndex = frameMap.get(pageId);
+            pinCount[frameIndex] -= 1; // check if pin count is zero before decrement? throw error?
+        }
+        // else throw error?
     }
 
 }

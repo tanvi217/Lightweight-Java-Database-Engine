@@ -1,9 +1,11 @@
 
 public abstract class BufferManager {
 
-    // configurable size of buffer cache.
     final int bufferSize;
 
+    /**
+     * @param bufferSize Configurable size of buffer cache.
+     */
     public BufferManager(int bufferSize) {
         this.bufferSize = bufferSize;
     }
