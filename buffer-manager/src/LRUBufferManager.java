@@ -1,4 +1,3 @@
-import java.util.Map;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -36,17 +35,13 @@ public class LRUBufferManager extends BufferManager {
     }
 
     // Returns true is flushed to disk; caller to mark the page dirty and update lru
-    private boolean writePageToDisk(UnnamedPage page) throws FileNotFoundException, IOException {
+    private boolean writePageToDisk(Page page) throws FileNotFoundException, IOException {
         try (RandomAccessFile raf = new RandomAccessFile(binaryFile, "rw")) {
             raf.seek((long) pageSize); // IMO, page should have pageId, pageRows (all the rows in the page)
             raf.write(123); // TODO: implement serializer in Page; serialize(data)
         }
 
         return true;
-    }
-
-    private int getEmptyFrame() {
-        return 0;
     }
 
     @Override
@@ -65,13 +60,13 @@ public class LRUBufferManager extends BufferManager {
                 int fIdx = frameMap.get(pId);
                 if (pinCount[fIdx] == 0) { // if page can be removed
                     if (isDirty[fIdx]) {
-                        writePageToDisk(pId, bufferPool[fIdx]);
+                        writePageToDisk(bufferPool[fIdx]); // handle exception, might need to pass pageId
                     }
                     frameIndex = fIdx;
                     break;
                 }
             }
-            bufferPool[frameIndex] = readPageFromDisk(pageId);
+            bufferPool[frameIndex] = readPageFromDisk(pageId); // handle exception
         }
         frameMap.put(pageId, frameIndex);
         pinCount[frameIndex] += 1;
