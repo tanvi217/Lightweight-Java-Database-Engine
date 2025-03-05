@@ -1,4 +1,3 @@
-
 public interface Page {
 
     /**
@@ -23,4 +22,10 @@ public interface Page {
      * @return true if the page is full, false otherwise
      */
     boolean isFull();
+
+    /**
+     * @return the pageId of this page, used in BufferManager
+     */
+    int getId();
+
 }

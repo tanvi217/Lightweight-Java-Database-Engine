@@ -53,11 +53,11 @@ public class LRUBufferManager extends BufferManager {
         if (isDirty[frameIndex]) {
             writePageToDisk(prevPage);
         }
-        frameMap.remove(-1); // replace -1 with something like prevPage.getId()
+        frameMap.remove(prevPage.getId());
         bufferPool[frameIndex] = nextPage;
         isDirty[frameIndex] = false;
         pinCount[frameIndex] = 0;
-        frameMap.put(frameIndex, -1); // replace -1 with something like nextPage.getId()
+        frameMap.put(frameIndex, nextPage.getId());
     }
 
     /**
