@@ -17,9 +17,9 @@ public class LRUBufferManager extends BufferManager {
     public LRUBufferManager(int numFrames) {
         super(numFrames);
         frameMap = new LinkedHashMap<>(1 + (bufferSize * 4) / 3, 0.75f, false);
-        bufferPool = new Page[bufferSize];
-        isDirty = new boolean[bufferSize];
-        pinCount = new int[bufferSize];
+        bufferPool = new Page[bufferSize]; // all null
+        isDirty = new boolean[bufferSize]; // all false
+        pinCount = new int[bufferSize]; // all 0
         pageCount = 0;
     }
 
@@ -44,39 +44,57 @@ public class LRUBufferManager extends BufferManager {
         return true;
     }
 
+    /**
+     * Replaces page in bufferPool at frameIndex, writing to disk if necessary.
+     * Ignores pins, and resets isDirty and pinCount at frameIndex.
+     */
+    private void overwriteFrame(int frameIndex, Page nextPage) throws IOException {
+        Page prevPage = bufferPool[frameIndex];
+        if (isDirty[frameIndex]) {
+            writePageToDisk(prevPage);
+        }
+        frameMap.remove(-1); // replace -1 with something like prevPage.getId()
+        bufferPool[frameIndex] = nextPage;
+        isDirty[frameIndex] = false;
+        pinCount[frameIndex] = 0;
+        frameMap.put(frameIndex, -1); // replace -1 with something like nextPage.getId()
+    }
+
+    /**
+     * Doesn't change any instance variables.
+     */
+    private int leastRecentlyUsedFrame() {
+        Iterator<Integer> lruPageIds = frameMap.keySet().iterator();
+        while (lruPageIds.hasNext()) {
+            int pageId = lruPageIds.next();
+            int frameIndex = frameMap.get(pageId);
+            if (pinCount[frameIndex] == 0) {
+                return frameIndex;
+            }
+        }
+        throw new IllegalStateException("Buffer contains no unpinned pages.");
+    }
+
     @Override
-    public Page getPage(int pageId) {
-        int frameIndex = -1;
+    public Page getPage(int pageId) throws IOException {
+        int frameIndex;
         if (frameMap.containsKey(pageId)) {
             frameIndex = frameMap.get(pageId);
-            frameMap.remove(pageId); // removal to allow reinsertion
+            frameMap.remove(pageId); // remove so that insertion resets pageId's position in frameMap.keySet()
+            frameMap.put(pageId, frameIndex);
         } else {
-            Iterator<Integer> lruPageIds = frameMap.keySet().iterator();
-            while (true) { // loop to find page eligible for eviction
-                if (!lruPageIds.hasNext()) {
-                    // throw exception
-                }
-                int pId = lruPageIds.next();
-                int fIdx = frameMap.get(pId);
-                if (pinCount[fIdx] == 0) { // if page can be removed
-                    if (isDirty[fIdx]) {
-                        writePageToDisk(bufferPool[fIdx]); // handle exception, might need to pass pageId
-                    }
-                    frameIndex = fIdx;
-                    break;
-                }
-            }
-            bufferPool[frameIndex] = readPageFromDisk(pageId); // handle exception
+            frameIndex = leastRecentlyUsedFrame();
+            Page nextPage = readPageFromDisk(pageId);
+            overwriteFrame(frameIndex, nextPage);
         }
-        frameMap.put(pageId, frameIndex);
         pinCount[frameIndex] += 1;
         return bufferPool[frameIndex];
     }
 
     @Override
-    public Page createPage() {
+    public Page createPage() throws IOException {
         int pageId = pageCount++;
-        Page pageObject = getPage(pageId);
+        Page pageObject = getPage(pageId); // inserts pageId into frameMap
         int frameIndex = frameMap.get(pageId);
         isDirty[frameIndex] = true;
         return pageObject;
@@ -88,16 +106,19 @@ public class LRUBufferManager extends BufferManager {
             int frameIndex = frameMap.get(pageId);
             isDirty[frameIndex] = true;
         }
-        // else throw error
+        throw new IllegalArgumentException("No page with this ID is in the buffer.");
     }
 
     @Override
     public void unpinPage(int pageId) {
         if (frameMap.containsKey(pageId)) {
             int frameIndex = frameMap.get(pageId);
-            pinCount[frameIndex] -= 1; // check if pin count is zero before decrement? throw error?
+            if (pinCount[frameIndex] == 0) {
+                throw new IllegalStateException("Cannot unpin page with no pins.");
+            }
+            pinCount[frameIndex] -= 1;
         }
-        // else throw error?
+        throw new IllegalArgumentException("No page with this ID is in the buffer.");
     }
 
 }
