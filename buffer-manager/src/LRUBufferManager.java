@@ -48,7 +48,7 @@ public class LRUBufferManager extends BufferManager {
 
     // Reads bytes from disk
     private Page readPageFromDisk(int pageId) {
-        if (pageId > pageCount) {
+        if (pageId >= pageCount) {
             return null; // no such page in disk
         }
 
@@ -96,12 +96,13 @@ public class LRUBufferManager extends BufferManager {
      * Replaces page in bufferPool at frameIndex, writing to disk if necessary.
      * Ignores pins, and resets isDirty and pinCount at frameIndex.
      */
-    private void overwriteFrame(int frameIndex, Page nextPage) throws IOException {
+    private void overwriteFrame(int prevPageId, Page nextPage) throws IOException {
+        int frameIndex = frameMap.get(prevPageId);
         Page prevPage = bufferPool[frameIndex];
-        if (isDirty[frameIndex]) {
+        if (isDirty[frameIndex] && prevPage != null) {
             writePageToDisk(prevPage);
         }
-        frameMap.remove(prevPage.getId());
+        frameMap.remove(prevPageId);
         bufferPool[frameIndex] = nextPage;
         isDirty[frameIndex] = false;
         pinCount[frameIndex] = 0;
@@ -109,15 +110,16 @@ public class LRUBufferManager extends BufferManager {
     }
 
     /**
-     * Doesn't change any instance variables.
+     * Doesn't change any instance variables, and returns the pageId of the
+     * least recently used unpinned page currently in bufferPool.
      */
-    private int leastRecentlyUsedFrame() {
+    private int leastRecentlyUsedPage() {
         Iterator<Integer> lruPageIds = frameMap.keySet().iterator();
         while (lruPageIds.hasNext()) {
             int pageId = lruPageIds.next();
             int frameIndex = frameMap.get(pageId);
             if (pinCount[frameIndex] == 0) {
-                return frameIndex;
+                return pageId;
             }
         }
         throw new IllegalStateException("Buffer contains no unpinned pages.");
@@ -131,9 +133,10 @@ public class LRUBufferManager extends BufferManager {
             frameMap.remove(pageId); // remove so that insertion resets pageId's position in frameMap.keySet()
             frameMap.put(pageId, frameIndex);
         } else {
-            frameIndex = leastRecentlyUsedFrame();
+            int lruPageId = leastRecentlyUsedPage();
+            frameIndex = frameMap.get(lruPageId);
             Page nextPage = readPageFromDisk(pageId);
-            overwriteFrame(frameIndex, nextPage);
+            overwriteFrame(lruPageId, nextPage);
         }
         pinCount[frameIndex] += 1;
         return bufferPool[frameIndex];
@@ -150,23 +153,23 @@ public class LRUBufferManager extends BufferManager {
 
     @Override
     public void markDirty(int pageId) {
-        if (frameMap.containsKey(pageId)) {
-            int frameIndex = frameMap.get(pageId);
-            isDirty[frameIndex] = true;
+        if (!frameMap.containsKey(pageId)) {
+            throw new IllegalArgumentException("No page with this ID is in the buffer.");
         }
-        throw new IllegalArgumentException("No page with this ID is in the buffer.");
+        int frameIndex = frameMap.get(pageId);
+        isDirty[frameIndex] = true;
     }
 
     @Override
     public void unpinPage(int pageId) {
-        if (frameMap.containsKey(pageId)) {
-            int frameIndex = frameMap.get(pageId);
-            if (pinCount[frameIndex] == 0) {
-                throw new IllegalStateException("Cannot unpin page with no pins.");
-            }
-            pinCount[frameIndex] -= 1;
+        if (!frameMap.containsKey(pageId)) {
+            throw new IllegalArgumentException("No page with this ID is in the buffer.");
         }
-        throw new IllegalArgumentException("No page with this ID is in the buffer.");
+        int frameIndex = frameMap.get(pageId);
+        if (pinCount[frameIndex] == 0) {
+            throw new IllegalStateException("Cannot unpin page with no pins.");
+        }
+        pinCount[frameIndex] -= 1;
     }
 
     @Override
@@ -176,7 +179,7 @@ public class LRUBufferManager extends BufferManager {
         int[] numColumns = {8, 8, 8, 6, 4, 4, 3, 3};
         int rowSize = d > 7 ? 2 : numColumns[d];
         int idSize = d > 7 ? 11 : numDigits[d];
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("max pageId " + (pageCount - 1) + "\n");
         int i = 0;
         while (i < bufferSize) {
             for (int j = 0; j < rowSize && i < bufferSize; ++j) {
