@@ -18,18 +18,19 @@ public class LRUBufferManager extends BufferManager {
 
     public LRUBufferManager(int numFrames) {
         super(numFrames);
+        // LinkedHashMap parameters (initialCapacity, loadFactor, false means maintains insertion order. True means order by most recently accessed)
+        //maybe change to true?
         frameMap = new LinkedHashMap<>(1 + (bufferSize * 4) / 3, 0.75f, false);
         bufferPool = new Page[bufferSize]; // all null
         isDirty = new boolean[bufferSize]; // all false
         pinCount = new int[bufferSize]; // all 0
         pageCount = 0;
 
-        initFile(); // Initialize binary file if it doesn’t exist
+        initFile(); // Initialize binary file if it doesn’t exist 
     }
 
     private void initFile() {
         File file = new File(binaryFile);
-
         if (!file.exists()) {
             try {
                 if (file.createNewFile()) {
@@ -59,7 +60,7 @@ public class LRUBufferManager extends BufferManager {
 
             return page;
         } catch (FileNotFoundException ex) {
-            System.err.println("Could not create binary file.");
+            System.err.println("Could not find binary file.");
             ex.printStackTrace();
         } catch (IOException ex) {
             System.err.println("Exception while reading from disk");
@@ -103,6 +104,7 @@ public class LRUBufferManager extends BufferManager {
         isDirty[frameIndex] = false;
         pinCount[frameIndex] = 0;
         frameMap.put(frameIndex, nextPage.getId());
+        prevPage = null;
     }
 
     /**
