@@ -121,4 +121,29 @@ public class LRUBufferManager extends BufferManager {
         throw new IllegalArgumentException("No page with this ID is in the buffer.");
     }
 
+    @Override
+    public String toString() {
+        int d = String.valueOf(pageCount - 1).length();
+        int[] numDigits = {2, 2, 2, 3, 5, 5, 7, 7};
+        int[] numColumns = {8, 8, 8, 6, 4, 4, 3, 3};
+        int rowSize = d > 7 ? 2 : numColumns[d];
+        int idSize = d > 7 ? 11 : numDigits[d];
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < bufferSize) {
+            for (int j = 0; j < rowSize && i < bufferSize; ++j) {
+                Page p = bufferPool[i];
+                sb.append(" ");
+                if (p != null) {
+                    sb.append(String.format("%0" + idSize + "d", p.getId()));
+                } else {
+                    sb.append("-".repeat(idSize));
+                }
+                ++i;
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
 }
