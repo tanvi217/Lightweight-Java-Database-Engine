@@ -12,5 +12,11 @@ public class Main {
         UnnamedPage p = new UnnamedPage();
         System.out.println(p.insertRow(r1));
         */
+
+        String imdbFilePath = "D:\\masters\\cs645-labs\\buffer-manager\\data\\title.basics.tsv";
+        int bufferPoolSize = 3;
+
+        BufferManager bufferManager = new LRUBufferManager(bufferPoolSize);
+        Utilities.loadDataset(bufferManager, imdbFilePath);
     }
 }

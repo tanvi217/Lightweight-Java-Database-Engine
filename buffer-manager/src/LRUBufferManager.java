@@ -1,6 +1,8 @@
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
 
@@ -11,37 +13,83 @@ public class LRUBufferManager extends BufferManager {
     private boolean[] isDirty;
     private int[] pinCount;
     private int pageCount;
-    private String binaryFile = "binaryFile.bin";
+    private String binaryFile = "data.bin";
     private int pageSize = 4096; // 4KB
 
     public LRUBufferManager(int numFrames) {
         super(numFrames);
         frameMap = new LinkedHashMap<>(1 + (bufferSize * 4) / 3, 0.75f, false);
+        for (int i = 1; i <= bufferSize; ++i) {
+            frameMap.put(-i, i-1); // fill frameMap with negative pageIds that will not be used. All possible frameIndex are included. frameMap should always have a number of keys equal to bufferSize
+        }
         bufferPool = new Page[bufferSize]; // all null
         isDirty = new boolean[bufferSize]; // all false
         pinCount = new int[bufferSize]; // all 0
         pageCount = 0;
+
+        initFile(); // Initialize binary file if it doesn’t exist
     }
 
-    // Reads bytes from disk (binaryFile), deserializes as Page
-    private Page readPageFromDisk(int pageId) throws FileNotFoundException, IOException {
+    private void initFile() {
+        File file = new File(binaryFile);
+
+        if (!file.exists()) {
+            try {
+                if (file.createNewFile()) {
+                    System.out.println("Created new file: " + binaryFile);
+                } else {
+                    System.out.println("Failed to create file: " + binaryFile);
+                }
+            } catch (IOException e) {
+                System.err.println("Error creating file " + binaryFile + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // Reads bytes from disk
+    private Page readPageFromDisk(int pageId) {
+        if (pageId > pageCount) {
+            return null; // no such page in disk
+        }
+
         try (RandomAccessFile raf = new RandomAccessFile(binaryFile, "r")) {
             raf.seek((long) pageId * pageSize);
             byte[] data = new byte[pageSize];
             raf.readFully(data);
 
-            return new UnnamedPage(); // TODO: implement deserializer in Page; deserialize(pageId, data)
+            Page page = new UnnamedPage(pageId);
+            // TODO: implement page.deserialize(data)
+
+            return page;
+        } catch (FileNotFoundException ex) {
+            System.err.println("Could not create binary file.");
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            System.err.println("Exception while reading from disk");
+            ex.printStackTrace();
         }
+
+        return null;
     }
 
-    // Returns true is flushed to disk; caller to mark the page dirty and update lru
-    private boolean writePageToDisk(Page page) throws FileNotFoundException, IOException {
+    // Writes bytes to disk
+    // @return true if successful
+    // caller to mark the page dirty and update lru
+    private boolean writePageToDisk(Page page) {
         try (RandomAccessFile raf = new RandomAccessFile(binaryFile, "rw")) {
-            raf.seek((long) pageSize); // IMO, page should have pageId, pageRows (all the rows in the page)
-            raf.write(123); // TODO: implement serializer in Page; serialize(data)
+            raf.seek((long) page.getId() * pageSize);
+            raf.write(123); // TODO page.serialize() should return byte[]
+
+            return true;
+        } catch (FileNotFoundException ex) {
+            System.err.println("Could not create binary file.");
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            System.err.println("Exception while reading from disk");
+            ex.printStackTrace();
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -57,7 +105,7 @@ public class LRUBufferManager extends BufferManager {
         bufferPool[frameIndex] = nextPage;
         isDirty[frameIndex] = false;
         pinCount[frameIndex] = 0;
-        frameMap.put(frameIndex, nextPage.getId());
+        frameMap.put(nextPage.getId(), frameIndex);
     }
 
     /**

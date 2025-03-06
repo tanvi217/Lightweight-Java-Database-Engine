@@ -5,11 +5,12 @@ public class UnnamedPage implements Page {
     private int currRowId;
     private int size = 4096;
     //ends up being 105 entries per page, so when currRowId >= 106 the page is full
-
+    int pageId;
     
-    public UnnamedPage(){
+    public UnnamedPage(int pageId){
         currRowId = 1;
     }
+
     @Override
     public Row getRow(int rowId) {
 
@@ -41,4 +42,8 @@ public class UnnamedPage implements Page {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    @Override
+    public int getId() {
+        return pageId;
+    }
 }
