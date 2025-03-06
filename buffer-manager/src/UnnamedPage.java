@@ -9,6 +9,7 @@ public class UnnamedPage implements Page {
     
     public UnnamedPage(int pageId){
         currRowId = 1;
+        this.pageId = pageId;
     }
 
     @Override
