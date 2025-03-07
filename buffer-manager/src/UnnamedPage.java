@@ -47,4 +47,16 @@ public class UnnamedPage implements Page {
     public int getId() {
         return pageId;
     }
+
+    @Override
+    public byte[] serialize(int numRows) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'serialize'");
+    }
+
+    @Override
+    public void deserialize(byte[] data) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
+    }
 }

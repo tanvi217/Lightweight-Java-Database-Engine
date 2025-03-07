@@ -13,7 +13,9 @@ public class Main {
         System.out.println(p.insertRow(r1));
         */
 
-        String imdbFilePath = "D:\\masters\\cs645-labs\\buffer-manager\\data\\title.basics.tsv";
+        
+        //String imdbFilePath = "D:\\masters\\cs645-labs\\buffer-manager\\data\\title.basics.tsv";
+        String imdbFilePath = "buffer-manager\\data\\title.basics.tsv"; //change path on your machine, MANUALLY
         int bufferPoolSize = 3;
 
         BufferManager bufferManager = new LRUBufferManager(bufferPoolSize);

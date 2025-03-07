@@ -28,4 +28,8 @@ public interface Page {
      */
     int getId();
 
+    byte[] serialize(int numRows);
+
+    void deserialize(byte[] data);
+
 }
