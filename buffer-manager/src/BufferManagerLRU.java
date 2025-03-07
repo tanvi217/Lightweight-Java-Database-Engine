@@ -50,6 +50,7 @@ class BufferManagerLRU extends BufferManager {
         Page page = new PageImpl(nextPageId++); // increment nextPageId post page creation
         int frameIdx = addPageToBufferPool(page);
         isPinned[frameIdx] = 1;
+        markDirty(page.getId());
 
         return page;
     }
@@ -59,7 +60,10 @@ class BufferManagerLRU extends BufferManager {
         Page page = null;
 
         // Check if pageId is valid
-        if (pageId >= nextPageId) return page;
+        if (pageId >= nextPageId){
+            System.out.println("Invalid page id, requested id: " + pageId + " highest id is: " + (nextPageId-1));
+            return page;
+        } 
 
         // Check if page is already in buffer pool
         // If found, increment pin count and return page, make it lru
@@ -224,7 +228,11 @@ class BufferManagerLRU extends BufferManager {
 
             Page pageFromDisk = new PageImpl(pageId);
 
-            return pageFromDisk.deserialize(data); // TODO: implement page.deserialize(data)
+            boolean success = pageFromDisk.deserialize(data); 
+            if(!success){
+                System.out.println("Something went wrong in deserialization, there was not enough space.");
+            }
+            return pageFromDisk;
         } catch (FileNotFoundException ex) {
             System.err.println("Could not find binary file.");
             ex.printStackTrace();

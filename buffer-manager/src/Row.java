@@ -39,6 +39,7 @@ public static Row deserialize(byte[] data) {
     return new Row(movieId, title);
 }
 
+
 //debug
 @Override
 public String toString() {

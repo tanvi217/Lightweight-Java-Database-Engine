@@ -37,13 +37,12 @@ public interface Page {
     /**
      * TODO: Deserialize a byte array into a Page object.
      *
-     * @param pageId The ID of the page to deserialize.
      * @param data The byte array to deserialize.
-     * @return The Page object containing the deserialized data.
+     * @return boolean changes the page which was created to have the data in the buffer, returns false if failed, true if success.
      */
-    Page deserialize(byte[] data);
+    //Page deserialize(byte[] data);
     // byte[] serialize(int numRows);
 
-    // void deserialize(byte[] data);
+    boolean deserialize(byte[] data);
 
 }

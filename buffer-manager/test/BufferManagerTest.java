@@ -9,6 +9,7 @@ public class BufferManagerTest {
         for (int i = 0; i < totalPages; ++i) {
             try {
                 Page page = bm.createPage();
+                
                 System.out.println("A" + page.getId());
                 bm.unpinPage(page.getId());
             } catch (IOException e) {
