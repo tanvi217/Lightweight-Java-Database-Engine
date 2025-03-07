@@ -1,6 +1,7 @@
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
 public class UnnamedPage implements Page {
     private int currRowId;
     private int size = 4096;
@@ -46,5 +47,17 @@ public class UnnamedPage implements Page {
     @Override
     public int getId() {
         return pageId;
+    }
+
+    @Override
+    public byte[] serialize() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'serialize'");
+    }
+
+    @Override
+    public Page deserialize(byte[] data) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
     }
 }

@@ -28,4 +28,18 @@ public interface Page {
      */
     int getId();
 
+    /**
+    * TODO: Serialize this page into a byte array.
+     * @return the serialized byte array of this page
+     */
+    byte[] serialize();
+
+    /**
+     * TODO: Deserialize a byte array into a Page object.
+     *
+     * @param pageId The ID of the page to deserialize.
+     * @param data The byte array to deserialize.
+     * @return The Page object containing the deserialized data.
+     */
+    Page deserialize(byte[] data);
 }
