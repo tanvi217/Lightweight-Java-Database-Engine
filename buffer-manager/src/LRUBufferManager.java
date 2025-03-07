@@ -8,7 +8,7 @@ import java.util.Iterator;
 
 public class LRUBufferManager extends BufferManager {
 
-    private LinkedHashMap<Integer, Integer> frameMap;
+    private LinkedHashMap<Integer, Integer> frameMap; // planning to rename to pageTable
     private Page[] bufferPool;
     private boolean[] isDirty;
     private int[] pinCount;
@@ -20,7 +20,7 @@ public class LRUBufferManager extends BufferManager {
         super(numFrames);
         frameMap = new LinkedHashMap<>(1 + (bufferSize * 4) / 3, 0.75f, false);
         for (int i = 1; i <= bufferSize; ++i) {
-            frameMap.put(-i, i-1); // fill frameMap with negative pageIds that will not be used. All possible frameIndex are included. frameMap should always have a number of keys equal to bufferSize
+            frameMap.put(-i, i-1); // fill pageTable with negative pageIds that will not be used. All possible frameIndex are included. pageTable should always have a number of keys equal to bufferSize
         }
         bufferPool = new Page[bufferSize]; // all null
         isDirty = new boolean[bufferSize]; // all false
@@ -57,7 +57,7 @@ public class LRUBufferManager extends BufferManager {
             byte[] data = new byte[pageSize];
             raf.readFully(data);
 
-            Page page = new UnnamedPage(pageId);
+            Page page = new SizedPage(4096, 39, pageId);
             // TODO: implement page.deserialize(data)
 
             return page;
@@ -130,7 +130,7 @@ public class LRUBufferManager extends BufferManager {
         int frameIndex;
         if (frameMap.containsKey(pageId)) {
             frameIndex = frameMap.get(pageId);
-            frameMap.remove(pageId); // remove so that insertion resets pageId's position in frameMap.keySet()
+            frameMap.remove(pageId); // remove so that insertion resets pageId's position in pageTable.keySet()
             frameMap.put(pageId, frameIndex);
         } else {
             int lruPageId = leastRecentlyUsedPage();
@@ -145,7 +145,7 @@ public class LRUBufferManager extends BufferManager {
     @Override
     public Page createPage() throws IOException {
         int pageId = pageCount++;
-        Page pageObject = getPage(pageId); // inserts pageId into frameMap
+        Page pageObject = getPage(pageId); // inserts pageId into pageTable
         int frameIndex = frameMap.get(pageId);
         isDirty[frameIndex] = true;
         return pageObject;
