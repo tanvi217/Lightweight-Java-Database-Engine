@@ -18,10 +18,12 @@ class BufferManagerLRU extends BufferManager {
     private LinkedList<Integer> lruQueue; // Queue of unpinned pageIds in LRU order
     private int nextPageId;
     private int usedFrames;
+    private boolean printStuff;
 
-    public BufferManagerLRU(int bufferSize) {
+    public BufferManagerLRU(int bufferSize, boolean printStuff) {
         super(bufferSize);
         this.bufferSize = bufferSize;
+        this.printStuff = printStuff;
         this.bufferPool = new Page[bufferSize];
         this.isDirty = new boolean[bufferSize];
         this.isPinned = new int[bufferSize];
@@ -30,6 +32,11 @@ class BufferManagerLRU extends BufferManager {
         initFile();
         this.nextPageId = 0;
         this.usedFrames = 0;
+    }
+
+    public BufferManagerLRU(int bufferSize) {
+        // printStuff is false by defeault, just nice for testing.
+        this(bufferSize, false);
     }
 
     @Override
@@ -61,7 +68,9 @@ class BufferManagerLRU extends BufferManager {
             isPinned[frameIdx] = 1;
             lruQueue.remove((Integer) pageId); // Remove from LRU
 
-            System.out.println("Cache hit: Page " + pageId);
+            if(printStuff){
+                System.out.println("Cache hit: Page " + pageId);
+            }
 
             return bufferPool[frameIdx];
         }
@@ -74,7 +83,9 @@ class BufferManagerLRU extends BufferManager {
         page = readPageFromDisk(pageId);
     
         if (page != null) {
-            System.out.println("Cache miss: Loaded Page " + pageId + " from disk");
+            if(printStuff){
+                System.out.println("Cache miss: Loaded Page " + pageId + " from disk");
+            }
 
             int frameIdx = addPageToBufferPool(page);
             isPinned[frameIdx] = 1; // Pinned on load
@@ -91,7 +102,9 @@ class BufferManagerLRU extends BufferManager {
             if (isPinned[frameIdx] > 0) {
                 isPinned[frameIdx] = 0;
 
-                System.out.println("Unpinned page " + pageId);
+                if(printStuff){
+                    System.out.println("Unpinned page " + pageId);
+                }
 
                 if (isPinned[frameIdx] == 0) {
                     lruQueue.add(pageId); // Add to LRU queue when unpinned
@@ -105,8 +118,9 @@ class BufferManagerLRU extends BufferManager {
         if (pageTable.containsKey(pageId)) {
             int frameIdx = pageTable.get(pageId);
             isDirty[frameIdx] = true;
-
-            System.out.println("Marked page " + pageId + " as dirty");
+            if(printStuff){
+                System.out.println("Marked page " + pageId + " as dirty");
+            }
         }
     }
 
@@ -117,7 +131,9 @@ class BufferManagerLRU extends BufferManager {
         bufferPool[frameIdx] = page;
         pageTable.put(page.getId(), frameIdx);
 
-        System.out.println("Added page " + page.getId() + " to frame " + frameIdx);
+        if(printStuff){
+            System.out.println("Added page " + page.getId() + " to frame " + frameIdx);
+        }
         
         return frameIdx;
     }
@@ -133,11 +149,15 @@ class BufferManagerLRU extends BufferManager {
         int frameIdx = pageTable.get(pageId); // Get frame index of page
         Page page = bufferPool[frameIdx];
 
-        System.out.println("Evicting page " + pageId + " from frame " + frameIdx);
+        if(printStuff){
+            System.out.println("Evicting page " + pageId + " from frame " + frameIdx);
+        }
 
         // Check if page is dirty, write to disk if dirty
         if (isDirty[frameIdx]) {
-            System.out.println("Dirty page " + pageId);
+            if(printStuff){
+                System.out.println("Dirty page " + pageId);
+            }
 
             if (!writePageToDisk(page)) {
                 System.out.println("Error: Failed to write dirty page " + pageId + " to disk");
@@ -145,7 +165,9 @@ class BufferManagerLRU extends BufferManager {
             }
 
             isDirty[frameIdx] = false;
-            System.out.println("Wrote page " + pageId + " to disk, marked undirty");
+            if(printStuff){
+                System.out.println("Wrote page " + pageId + " to disk, marked undirty");
+            }
         }
 
         // Swap with last frame instead of shifting
@@ -164,9 +186,11 @@ class BufferManagerLRU extends BufferManager {
         isPinned[lastFrameIdx] = 0;
         pageTable.remove(pageId);
         usedFrames--;
-
-        System.out.println("Evicted page " + pageId + " from frame " + frameIdx);
-
+        //System.out.println(pageTable);
+        if(printStuff){
+            System.out.println("Evicted page " + pageId + " from frame " + frameIdx);
+            System.out.println("Moved page " + bufferPool[frameIdx].getId() + " from frame " + lastFrameIdx + " to frame " + frameIdx);
+        }
         return true;
     }
 

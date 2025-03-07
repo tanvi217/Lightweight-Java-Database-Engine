@@ -5,7 +5,7 @@ public class BufferManagerTest {
     public static void main(String[] args) {
         int totalPages = 10;
         int bufferSize = 4;
-        BufferManager bm = new LRUBufferManager(bufferSize);
+        BufferManager bm = new BufferManagerLRU(bufferSize);
         for (int i = 0; i < totalPages; ++i) {
             try {
                 Page page = bm.createPage();
