@@ -42,4 +42,8 @@ public interface Page {
      * @return The Page object containing the deserialized data.
      */
     Page deserialize(byte[] data);
+    // byte[] serialize(int numRows);
+
+    // void deserialize(byte[] data);
+
 }

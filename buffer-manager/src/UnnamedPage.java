@@ -51,6 +51,10 @@ public class UnnamedPage implements Page {
 
     @Override
     public byte[] serialize() {
+        throw new UnsupportedOperationException("Unimplemented method 'serialize'");
+    }
+
+    public byte[] serialize(int numRows) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'serialize'");
     }

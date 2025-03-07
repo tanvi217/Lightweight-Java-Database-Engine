@@ -1,6 +1,6 @@
-
 /**
- * Struct representing a database row, *containing primitive data types ONLY* to enable serialization.
+ * Struct representing a database row, *containing primitive data types ONLY* to
+ * enable serialization.
  */
 public class Row {
 
@@ -13,4 +13,5 @@ public class Row {
         this.movieId = movieId;
         this.title = title;
     }
+
 }
