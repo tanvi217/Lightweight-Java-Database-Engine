@@ -40,7 +40,7 @@ class BufferManagerLRU extends BufferManager {
             return null;
         }
 
-        Page page = new UnnamedPage(nextPageId++); // increment nextPageId post page creation
+        Page page = new PageImpl(nextPageId++); // increment nextPageId post page creation
         int frameIdx = addPageToBufferPool(page);
         isPinned[frameIdx] = 1;
 
@@ -198,7 +198,7 @@ class BufferManagerLRU extends BufferManager {
             byte[] data = new byte[Constants.PAGE_SIZE];
             raf.readFully(data);
 
-            Page pageFromDisk = new UnnamedPage(pageId);
+            Page pageFromDisk = new PageImpl(pageId);
 
             return pageFromDisk.deserialize(data); // TODO: implement page.deserialize(data)
         } catch (FileNotFoundException ex) {
