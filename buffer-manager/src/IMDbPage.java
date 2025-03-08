@@ -16,18 +16,18 @@ public class IMDbPage implements Page {
         buffer.put(lastByteIndex, (byte) rowId);
     }
     
-    public IMDbPage(int pageId, int pageBytes, ByteBuffer buffer, boolean isEmpty) {
+    public IMDbPage(int pageId, int pageBytes, ByteBuffer buffer) {
         this.pageId = pageId;
         this.buffer = buffer;
         maxRows = (pageBytes - 1) / rowBytes; // subtract one for nextRowId byte
         pageStart = pageId * pageBytes;
         lastByteIndex = pageStart + pageBytes - 1;
         rows = new Row[maxRows];
-        if (isEmpty) {
-            setNextRowId(0);
-        } else {
-            nextRowId = (int) buffer.get(lastByteIndex);
-        }
+        nextRowId = (int) buffer.get(lastByteIndex);
+    }
+
+    public void clear() {
+        setNextRowId(0);
     }
 
     @Override
