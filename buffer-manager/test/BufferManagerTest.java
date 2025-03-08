@@ -1,12 +1,11 @@
 import java.io.IOException;
 import java.util.Arrays;
-
+/**
+ * Comments are intended to give an idea of what the buffer might look like, but
+ * the real contents could differ depending on implementation.
+ */
 public class BufferManagerTest {
 
-    /**
-     * Comments are intended to give an idea of what the buffer might look like,
-     * but the real contents could differ depending on implementation.
-     */
     public static String overfillBuffer() {
         int bufferSize = 3;
         int totalPages = 4;
@@ -45,6 +44,7 @@ public class BufferManagerTest {
         } catch (IOException e) {
             return "IO error: " + e.toString();
         } catch (Exception e) {
+            e.printStackTrace();
             return "Failed due to unexpected error: " + e.toString();
         }
         return "Passed evictPage(), and expected no exceptions to be thrown.";
@@ -68,9 +68,10 @@ public class BufferManagerTest {
         } catch (IOException e) {
             return "IO error: " + e.toString();
         } catch (Exception e) {
+            e.printStackTrace();
             return "Failed due to unexpected error: " + e.toString();
         }
-        boolean[] foundError = new boolean[3]; // change number of errors here
+        boolean[] foundError = new boolean[3]; // update number of errors here
         try {
             // 0,1  4,1  2,1  3,1
             p[5] = bm.createPage(); // error
@@ -102,6 +103,7 @@ public class BufferManagerTest {
         } catch (IOException e) {
             return "IO error: " + e.toString();
         } catch (Exception e) {
+            e.printStackTrace();
             return "Failed due to unexpected error: " + e.toString();
         }
         if (p[5].getId() != 5) {
@@ -114,7 +116,7 @@ public class BufferManagerTest {
             // p[1] not in buffer
             foundError[2] = true;
         }
-        return "Passed lruLongerTest(), and expected 3 exceptions to be thrown. Caught status " + Arrays.toString(foundError);
+        return "Passed lruLongerTest(), and expected " + foundError.length + " exceptions to be thrown. Caught status " + Arrays.toString(foundError);
     }
 
 }

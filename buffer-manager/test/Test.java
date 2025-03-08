@@ -4,7 +4,7 @@ public class Test {
 
     public static BufferManager getNewBM(int bufferSize) {
         // change to whichever BufferManager extension you want to test
-        return new BufferManagerLRU(bufferSize);
+        return new LRUBufferManager(bufferSize);
     }
 
     public static void main(String[] args) {
