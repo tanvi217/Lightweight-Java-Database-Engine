@@ -37,7 +37,7 @@ class BufferManagerLRU extends BufferManager {
 
     public BufferManagerLRU(int bufferSize) {
         // printStuff is false by defeault, just nice for testing.
-        this(bufferSize, false);
+        this(bufferSize, true);
     }
 
     @Override
@@ -131,9 +131,9 @@ class BufferManagerLRU extends BufferManager {
             int frameIdx = pageTable.get(pageId);
             isDirty[frameIdx] = true;
 
-            if (printStuff) {
-                System.out.println("Marked page " + pageId + " as dirty");
-            }
+            // if (printStuff) {
+            //     System.out.println("Marked page " + pageId + " as dirty");
+            // }
         }
     }
 
@@ -248,8 +248,10 @@ class BufferManagerLRU extends BufferManager {
             Page pageFromDisk = new PageImpl(pageId);
 
             boolean success = pageFromDisk.deserialize(data); 
-            if(!success){
+            if (!success) {
                 System.out.println("Something went wrong in deserialization, there was not enough space.");
+            } else {
+                System.out.println("Deserialized page " + pageId + " from disk");
             }
             return pageFromDisk;
         } catch (FileNotFoundException ex) {
@@ -271,6 +273,7 @@ class BufferManagerLRU extends BufferManager {
         try (RandomAccessFile raf = new RandomAccessFile(Constants.BINARY_FILE_PATH, "rw")) {
             raf.seek((long) page.getId() * Constants.PAGE_SIZE);
             raf.write(page.serialize()); // TODO page.serialize() should return byte[]
+            System.out.println("Wrote page " + page.getId() + " to disk");
 
             return true;
         } catch (FileNotFoundException ex) {

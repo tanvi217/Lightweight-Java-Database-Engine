@@ -11,7 +11,7 @@ public class Utilities {
             String curRow;
             int rowsProcessed = 1;
             int possibleBufferPoolSize = Constants.BUFFER_SIZE;
-            int rowsToFill = 5;
+            int rowsToFill = 10;
             int pagesCreated = 0;
             Random rand = new Random();
 
@@ -27,6 +27,7 @@ public class Utilities {
                 System.out.println("Created page with Id " + append_pid);
 
                 while ((curRow = bufferReader.readLine()) != null && !currentPage.isFull() && rowId < rowsToFill) {
+                    rowsProcessed++;
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
                     byte[] title = columns[2].getBytes();
@@ -36,12 +37,16 @@ public class Utilities {
 
                     // if row was inserted, mark the page dirty
                     if (rowId != -1) {
-                        rowsProcessed++;
                         bf.markDirty(append_pid);
 
-                        if (rowsProcessed % 1000 == 0) {
+                        if (rowsProcessed % 100 == 0) {
+                            System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
                             System.out.println("Processed " + rowsProcessed + " rows.");
                         }
+                    }
+                    else {
+                        System.err.println("rowsProcessed: " + rowsProcessed);
+                        System.err.println(currentPage.getId() + " could not insert row");
                     }
                 }
 
@@ -51,8 +56,10 @@ public class Utilities {
 
             // getPage calls to ensure eviction
             // fill up pages pulled from buffer pool
-            for (int i = 0; i < possibleBufferPoolSize; i++) {
+            for (int i = 0; i < possibleBufferPoolSize + 10; i++) {
                 int randomPageId = rand.nextInt(pagesCreated);
+                System.out.println("Querying page with Id " + randomPageId);
+
                 Page pageFromBufferPool = bf.getPage(randomPageId);
 
                 if (pageFromBufferPool != null) {
@@ -60,9 +67,11 @@ public class Utilities {
                 }
 
                 while ((curRow = bufferReader.readLine()) != null && !pageFromBufferPool.isFull()) {
+                    rowsProcessed++;
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
                     byte[] title = columns[2].getBytes();
+
                     Row row = new Row(movieId, title);
 
                     int rowId = pageFromBufferPool.insertRow(row);
@@ -72,9 +81,13 @@ public class Utilities {
                         rowsProcessed++;
                         bf.markDirty(pageFromBufferPool.getId());
 
-                        if (rowsProcessed % 1000 == 0) {
-                            System.out.println("Processed " + rowsProcessed + " rows.");
+                        if (rowsProcessed % 100 == 0) {
+                            System.out.println("Processed " + rowId + " rows in page with Id " + pageFromBufferPool.getId());
+                            System.out.println(rowsProcessed + " rows processed.");
                         }
+                    } else {
+                        System.err.println("rowsProcessed: " + rowsProcessed);
+                        System.err.println(pageFromBufferPool.getId() + " could not insert row");
                     }
                 }
 
@@ -83,6 +96,8 @@ public class Utilities {
                 System.out.println("Unpinned page with Id " + pageFromBufferPool.getId());
             }
 
+            System.out.println("Finished querying.");
+
             Page currentPage = bf.createPage();
             pagesCreated++;
             int append_pid = currentPage.getId();
@@ -90,6 +105,9 @@ public class Utilities {
 
             // load rest of the dataset
             while ((curRow = bufferReader.readLine()) != null) {
+                rowsProcessed++;
+                System.out.println("Processing row: " + curRow);
+
                 if (currentPage.isFull()) {
                     bf.unpinPage(currentPage.getId());
                     System.out.println("Unpinned page with Id " + currentPage.getId());
@@ -106,14 +124,20 @@ public class Utilities {
                 Row row = new Row(movieId, title);
                 int rowId = currentPage.insertRow(row);
 
+                System.out.println("Inserted row with Id " + rowId);
+
                 // if row was inserted, mark the page dirty
                 if (rowId != -1) {
                     rowsProcessed++;
                     bf.markDirty(append_pid);
 
-                    if (rowsProcessed % 1000 == 0) {
-                        System.out.println("Processed " + rowsProcessed + " rows.");
+                    if (rowsProcessed % 100 == 0) {
+                        System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
+                        System.out.println(rowsProcessed + " rows processed.");
                     }
+                } else {
+                    System.err.println("rowsProcessed: " + rowsProcessed);
+                    System.err.println(currentPage.getId() + " could not insert row");
                 }
             }
         } catch (Exception e) {
