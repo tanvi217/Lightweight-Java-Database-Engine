@@ -58,7 +58,7 @@ public class LRUBufferManager extends BufferManager {
             byte[] data = new byte[pageSize];
             raf.readFully(data);
 
-            Page page = new SizedPage(pageId);
+            Page page = new PageImpl(pageId);
             // TODO: implement page.deserialize(data)
 
             return page;
@@ -147,10 +147,15 @@ public class LRUBufferManager extends BufferManager {
     @Override
     public Page createPage() throws IOException {
         int pageId = pageCount++;
-        Page pageObject = getPage(pageId); // inserts pageId into pageTable
-        int frameIndex = frameMap.get(pageId);
-        isDirty[frameIndex] = true;
-        return pageObject;
+        try {
+            Page pageObject = getPage(pageId); // inserts pageId into pageTable
+            int frameIndex = frameMap.get(pageId);
+            isDirty[frameIndex] = true;
+            return pageObject;
+        } catch (IllegalStateException e) {
+            --pageCount;
+            throw e;
+        }
     }
 
     @Override

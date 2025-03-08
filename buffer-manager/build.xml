@@ -19,7 +19,7 @@
         </javac>
     </target>
     <target name="test" depends="compile-test">
-        <java classname="BufferManagerTest" classpath="${build-dir}" />
+        <java classname="Test" classpath="${build-dir}" />
     </target>
     <target name="clean">
         <delete dir="${build-dir}" />
