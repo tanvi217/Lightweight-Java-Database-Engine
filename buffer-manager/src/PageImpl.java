@@ -18,11 +18,10 @@ public class PageImpl implements Page {
     private int currentSize; // current size of the page
     private final ByteBuffer data;  // hold binary data of the page
 
-    public PageImpl(int pageId, BufferManagerLRU bufferManager) {
+    public PageImpl(int pageId) {
         this.pageId = pageId;
         this.numRows =0;
         //this.rows = new ArrayList<>();
-        this.bufferManager = bufferManager;
         this.currentSize = 0; // Starts with an empty page
         
         this.data = ByteBuffer.allocate(PAGE_SIZE);  // ByteBuffer of 4KB  to hold the page data
