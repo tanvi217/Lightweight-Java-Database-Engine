@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class IMDbPage implements Page {
 
@@ -48,8 +49,9 @@ public class IMDbPage implements Page {
         int rowStart = pageStart + rowId * rowBytes;
         byte[] movieId = new byte[9];
         byte[] title = new byte[30];
-        buffer.get(movieId, rowStart, rowStart + 9); // retrieve data from buffer
-        buffer.get(title, rowStart + 9, rowStart + 39);
+        buffer.position(rowStart);
+        buffer.get(movieId); // retrieve data from buffer
+        buffer.get(title);
         rows[rowId] = new Row(movieId, title);
         return rows[rowId];
     }
@@ -61,8 +63,9 @@ public class IMDbPage implements Page {
         }
         int rowId = nextRowId;
         int rowStart = pageStart + rowId * rowBytes;
-        buffer.put(row.movieId, rowStart, rowStart + 9); // write data to buffer
-        buffer.put(row.title, rowStart + 9, rowStart + 39);
+        buffer.position(rowStart);
+        buffer.put(row.movieId); // write data to buffer
+        buffer.put(row.title); // do we know for sure the size doesn't exceed 30? in piazza there is a post about some movieIds being 10 bytes, and that we can remove those.
         rows[rowId] = row;
         ++nextRowId;
         buffer.put(lastByteIndex, (byte) nextRowId); // write new nextRowId to buffer
