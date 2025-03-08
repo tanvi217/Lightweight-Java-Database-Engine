@@ -74,12 +74,12 @@ public class LRUBufferManager extends BufferManager {
         }
     }
 
-    private Page getNewPage(int pageId) {
-        return new IMDbPage(pageId, pageBytes, buffer); // could change Page implementation here
+    private Page getNewPage(int pageId, int frameIndex) {
+        return new IMDbPage(pageId, frameIndex, pageBytes, buffer); // could change Page implementation here
     }
 
     // Reads bytes from disk
-    private Page readPageFromDisk(int pageId) throws IOException {
+    private Page readPageFromDisk(int pageId, int frameIndex) throws IOException {
         if (pageId < 0 || pageId > nextPageId) { // pageId = nextPageId during createPage
             throw new IllegalArgumentException("Page ID out of bounds.");
         }
@@ -87,7 +87,7 @@ public class LRUBufferManager extends BufferManager {
             raf.seek((long) pageId * pageBytes);
             byte[] data = new byte[pageBytes];
             raf.readFully(data);
-            return getNewPage(pageId);
+            return getNewPage(pageId, frameIndex);
         } catch (FileNotFoundException ex) {
             System.err.println("Could not find binary file.");
             throw ex;
@@ -161,7 +161,7 @@ public class LRUBufferManager extends BufferManager {
         } else {
             int lruPageId = leastRecentlyUsedPage();
             frameIndex = pageTable.get(lruPageId);
-            Page nextPage = readPageFromDisk(pageId);
+            Page nextPage = readPageFromDisk(pageId, frameIndex);
             overwriteFrame(lruPageId, nextPage);
         }
         pinCount[frameIndex] += 1;

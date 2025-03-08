@@ -20,16 +20,18 @@ public class IMDbPage implements Page {
      * getRow are made. The nextRowId is retrieved from the buffer at the end of
      * this page.
      * 
-     * @param pageId    The id of this page.
-     * @param pageBytes Number of bytes in one page, is constant among all pages of
-     *                  the same buffer manager.
-     * @param buffer    A reference to the buffer initialized in LRUBufferManager.
+     * @param pageId     The id of this page.
+     * @param frameIndex The location of this page in the buffer, used to calculate
+     *                   pageStart.
+     * @param pageBytes  Number of bytes in one page, is constant among all pages of
+     *                   the same buffer manager.
+     * @param buffer     A reference to the buffer initialized in LRUBufferManager.
      */
-    public IMDbPage(int pageId, int pageBytes, ByteBuffer buffer) {
+    public IMDbPage(int pageId, int frameIndex, int pageBytes, ByteBuffer buffer) {
         this.pageId = pageId;
         this.buffer = buffer;
         maxRows = (pageBytes - 1) / rowBytes;
-        pageStart = pageId * pageBytes;
+        pageStart = frameIndex * pageBytes;
         lastByteIndex = pageStart + pageBytes - 1;
         rows = new Row[maxRows];
         nextRowId = (int) buffer.get(lastByteIndex);
