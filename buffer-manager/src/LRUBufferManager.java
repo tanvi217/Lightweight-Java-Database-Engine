@@ -12,7 +12,7 @@ public class LRUBufferManager extends BufferManager {
     private ByteBuffer buffer;
     private String binFile;
     private LinkedHashMap<Integer, Integer> pageTable;
-    private IMDbPage[] bufferPages;
+    private Page[] bufferPages;
     private boolean[] isDirty;
     private int[] pinCount;
     private int nextPageId;
@@ -41,7 +41,7 @@ public class LRUBufferManager extends BufferManager {
         for (int i = 1; i <= bufferSize; ++i) {
             pageTable.put(-i, i - 1);
         }
-        bufferPages = new IMDbPage[bufferSize];
+        bufferPages = new Page[bufferSize];
         isDirty = new boolean[bufferSize];
         pinCount = new int[bufferSize];
         nextPageId = 0;
@@ -74,12 +74,12 @@ public class LRUBufferManager extends BufferManager {
         }
     }
 
-    private IMDbPage getNewPage(int pageId) {
+    private Page getNewPage(int pageId) {
         return new IMDbPage(pageId, pageBytes, buffer); // could change Page implementation here
     }
 
     // Reads bytes from disk
-    private IMDbPage readPageFromDisk(int pageId) throws IOException {
+    private Page readPageFromDisk(int pageId) throws IOException {
         if (pageId < 0 || pageId > nextPageId) { // pageId = nextPageId during createPage
             throw new IllegalArgumentException("Page ID out of bounds.");
         }
@@ -119,7 +119,7 @@ public class LRUBufferManager extends BufferManager {
      * Replaces page in bufferPool at frameIndex, writing to disk if necessary.
      * Ignores pins, and resets isDirty and pinCount at frameIndex.
      */
-    private void overwriteFrame(int prevPageId, IMDbPage nextPage) throws IOException {
+    private void overwriteFrame(int prevPageId, Page nextPage) throws IOException {
         int frameIndex = pageTable.get(prevPageId);
         Page prevPage = bufferPages[frameIndex];
         if (isDirty[frameIndex] && prevPage != null) {
@@ -149,7 +149,7 @@ public class LRUBufferManager extends BufferManager {
     }
 
     @Override
-    public IMDbPage getPage(int pageId) throws IOException {
+    public Page getPage(int pageId) throws IOException {
         if (pageId < 0) {
             throw new IllegalArgumentException("No page can have ID less than zero.");
         }
@@ -161,7 +161,7 @@ public class LRUBufferManager extends BufferManager {
         } else {
             int lruPageId = leastRecentlyUsedPage();
             frameIndex = pageTable.get(lruPageId);
-            IMDbPage nextPage = readPageFromDisk(pageId);
+            Page nextPage = readPageFromDisk(pageId);
             overwriteFrame(lruPageId, nextPage);
         }
         pinCount[frameIndex] += 1;
@@ -170,8 +170,7 @@ public class LRUBufferManager extends BufferManager {
 
     @Override
     public Page createPage() throws IOException {
-        IMDbPage pageObject = getPage(nextPageId); // inserts nextPageId into pageTable
-        pageObject.clear();
+        Page pageObject = getPage(nextPageId); // inserts nextPageId into pageTable
         int frameIndex = pageTable.get(nextPageId);
         nextPageId += 1;
         isDirty[frameIndex] = true;

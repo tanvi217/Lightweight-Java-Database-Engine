@@ -11,23 +11,28 @@ public class IMDbPage implements Page {
     private Row[] rows;
     private int nextRowId; // equal to the number of full rows in this page
 
-    private void setNextRowId(int rowId) {
-        nextRowId = rowId;
-        buffer.put(lastByteIndex, (byte) rowId);
-    }
-    
+    /**
+     * IMDbPage writes directly to the buffer stored in LRUBufferManager. This isn't
+     * inefficient, because we don't write to disk at all. The number of bytes
+     * available to store rows in given by pageBytes - 1, where we subtract one to
+     * make space for nextRowId to be stored in a single byte at the end of the
+     * page. The rows array starts full of null values, and is populated as calls to
+     * getRow are made. The nextRowId is retrieved from the buffer at the end of
+     * this page.
+     * 
+     * @param pageId    The id of this page.
+     * @param pageBytes Number of bytes in one page, is constant among all pages of
+     *                  the same buffer manager.
+     * @param buffer    A reference to the buffer initialized in LRUBufferManager.
+     */
     public IMDbPage(int pageId, int pageBytes, ByteBuffer buffer) {
         this.pageId = pageId;
         this.buffer = buffer;
-        maxRows = (pageBytes - 1) / rowBytes; // subtract one for nextRowId byte
+        maxRows = (pageBytes - 1) / rowBytes;
         pageStart = pageId * pageBytes;
         lastByteIndex = pageStart + pageBytes - 1;
         rows = new Row[maxRows];
         nextRowId = (int) buffer.get(lastByteIndex);
-    }
-
-    public void clear() {
-        setNextRowId(0);
     }
 
     @Override
@@ -41,7 +46,7 @@ public class IMDbPage implements Page {
         int rowStart = pageStart + rowId * rowBytes;
         byte[] movieId = new byte[9];
         byte[] title = new byte[30];
-        buffer.get(movieId, rowStart, rowStart + 9);
+        buffer.get(movieId, rowStart, rowStart + 9); // retrieve data from buffer
         buffer.get(title, rowStart + 9, rowStart + 39);
         rows[rowId] = new Row(movieId, title);
         return rows[rowId];
@@ -50,14 +55,15 @@ public class IMDbPage implements Page {
     @Override
     public int insertRow(Row row) {
         if (nextRowId >= maxRows) {
-            return -1; // I think it said to do this in project description
+            return -1;
         }
         int rowId = nextRowId;
         int rowStart = pageStart + rowId * rowBytes;
-        buffer.put(row.movieId, rowStart, rowStart + 9);
+        buffer.put(row.movieId, rowStart, rowStart + 9); // write data to buffer
         buffer.put(row.title, rowStart + 9, rowStart + 39);
         rows[rowId] = row;
-        setNextRowId(nextRowId + 1);
+        ++nextRowId;
+        buffer.put(lastByteIndex, (byte) nextRowId); // write new nextRowId to buffer
         return rowId;
     }
 
