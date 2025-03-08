@@ -177,6 +177,7 @@ public class LRUBufferManager extends BufferManager {
         overwriteFrame(lruPageId, pageObject);
         nextPageId += 1;
         isDirty[frameIndex] = true;
+        pinCount[frameIndex] += 1;
         return pageObject;
     }
 
