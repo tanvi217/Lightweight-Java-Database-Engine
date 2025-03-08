@@ -56,6 +56,18 @@ public class IMDbPage implements Page {
         return rows[rowId];
     }
 
+    private byte[] toSize(byte[] arr, int size) {
+        if (arr.length == size) {
+            return arr;
+        }
+        int contentSize = arr.length < size ? arr.length : size;
+        byte[] resized = new byte[size];
+        for (int i = 0; i < contentSize; ++i) {
+            resized[i] = arr[i];
+        }
+        return resized;
+    }
+
     @Override
     public int insertRow(Row row) {
         if (nextRowId >= maxRows) {
@@ -64,8 +76,8 @@ public class IMDbPage implements Page {
         int rowId = nextRowId;
         int rowStart = pageStart + rowId * rowBytes;
         buffer.position(rowStart);
-        buffer.put(row.movieId); // write data to buffer
-        buffer.put(row.title); // do we know for sure the size doesn't exceed 30? in piazza there is a post about some movieIds being 10 bytes, and that we can remove those.
+        buffer.put(toSize(row.movieId, 9)); // write data to buffer
+        buffer.put(toSize(row.title, 30));
         rows[rowId] = row;
         ++nextRowId;
         buffer.put(lastByteIndex, (byte) nextRowId); // write new nextRowId to buffer
