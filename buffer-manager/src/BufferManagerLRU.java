@@ -49,7 +49,7 @@ class BufferManagerLRU extends BufferManager {
             throw new IllegalStateException("Buffer is full, all pages are pinned, cannot create new page.");
         }
 
-        Page page = new PageImpl(nextPageId++); // increment nextPageId post page creation
+        Page page = new PageImpl(nextPageId++, this); // increment nextPageId post page creation
         int frameIdx = addPageToBufferPool(page);
         isPinned[frameIdx] = 1;
         lruQueue.put(page.getId(), false); // Add to LRU queue when created
@@ -245,7 +245,7 @@ class BufferManagerLRU extends BufferManager {
             byte[] data = new byte[Constants.PAGE_SIZE];
             raf.readFully(data);
 
-            Page pageFromDisk = new PageImpl(pageId);
+            Page pageFromDisk = new PageImpl(pageId, this);
 
             boolean success = pageFromDisk.deserialize(data); 
             if (!success) {

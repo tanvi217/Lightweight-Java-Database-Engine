@@ -1,11 +1,14 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+
 
 
 public class PageImpl implements Page {
     private static final int PAGE_SIZE = 4096; // Page size in bytes
+    public BufferManagerLRU bufferManager;
     public static final int MOVIE_ID_SIZE = 9;  // movieId size: 9
     public static final int TITLE_SIZE = 30;    // title size: 30
     public static final int ROW_SIZE = MOVIE_ID_SIZE + TITLE_SIZE; // each row size
@@ -15,11 +18,13 @@ public class PageImpl implements Page {
     private int currentSize; // current size of the page
     private final ByteBuffer data;  // hold binary data of the page
 
-    public PageImpl(int pageId) {
+    public PageImpl(int pageId, BufferManagerLRU bufferManager) {
         this.pageId = pageId;
         this.numRows =0;
         //this.rows = new ArrayList<>();
+        this.bufferManager = bufferManager;
         this.currentSize = 0; // Starts with an empty page
+        
         this.data = ByteBuffer.allocate(PAGE_SIZE);  // ByteBuffer of 4KB  to hold the page data
     }
 
@@ -63,25 +68,34 @@ public class PageImpl implements Page {
     //return rows.get(rowId);
     }
 
-    @Override
+@Override
 public int insertRow(Row row) {
-    byte[] serializedRow = row.serialize(); 
-    
-    if (currentSize + serializedRow.length > PAGE_SIZE) {
-        return -1;
-    }
-    /* 
-    System.out.println("Buffer position: " + data.position());
-    System.out.println("Buffer limit: " + data.limit());
-    System.out.println("Buffer remaining: " + data.remaining());
-    System.out.println("SerializedRow size: " + serializedRow.length);
-    */
-    data.put(serializedRow); 
-    //rows.add(row); 
-    currentSize += serializedRow.length;
-    numRows +=1;
+    byte[] serializedRow = row.serialize();
 
-    return numRows - 1; 
+    // Check if the current page is full
+    if (currentSize + serializedRow.length > PAGE_SIZE) {
+        System.out.println("Page is full, creating a new page...");
+
+        
+            // Call createPage to get a new page from the buffer manager
+            Page newPage = bufferManager.createPage();  
+
+            
+            newPage.insertRow(row);  // Insert the row in the new page
+
+            return 0;  
+        
+            
+    }
+
+    // If there's space in the current page, insert the row there
+    data.put(serializedRow);  // Insert the row data into the current page
+    currentSize += serializedRow.length;
+    numRows++;  // Increment the number of rows inserted
+
+    System.out.println("Inserted row into current page. Row count: " + numRows);
+
+    return numRows - 1;  // Return the rowId (index)
 }
 
 @Override
