@@ -10,7 +10,7 @@ public class Utilities {
         try (BufferedReader bufferReader = new BufferedReader(new FileReader(filepath))) {
             String curRow;
             int rowsProcessed = 1;
-            int possibleBufferPoolSize = 10;
+            int possibleBufferPoolSize = Constants.BUFFER_SIZE;
             int rowsToFill = 5;
             int pagesCreated = 0;
             Random rand = new Random();

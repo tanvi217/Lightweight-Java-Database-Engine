@@ -10,9 +10,9 @@ public class Main {
         // Utilities.loadDataset(bufferManager, imdbFilePath);
         
 
-        //BufferManager bufferManager = new BufferManagerLRU(Constants.BUFFER_SIZE);
-        //Utilities.loadDataset(bufferManager, IMDB_FILE_PATH);
-        bufferManagerLRUTests();
+        BufferManager bufferManager = new BufferManagerLRU(Constants.BUFFER_SIZE);
+        Utilities.loadDataset(bufferManager, Constants.IMDB_FILE_PATH);
+        // bufferManagerLRUTests();
     }
 
     private static void bufferManagerLRUTests(){
