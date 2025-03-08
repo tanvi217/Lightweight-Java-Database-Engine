@@ -52,7 +52,7 @@ public class LRUBufferManager extends BufferManager {
      * For use with IMDb data. Select which Page implementation to use here.
      */
     public LRUBufferManager(int numFrames) {
-        this(numFrames, 4, "data.bin");
+        this(numFrames, 4, Constants.DATA_BIN_FILE);
     }
 
     /**
@@ -102,9 +102,10 @@ public class LRUBufferManager extends BufferManager {
     // caller to mark the page dirty and update lru
     private boolean writePageToDisk(Page page) throws IOException {
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "rw")) {
-            int pageStart = page.getId() * pageBytes;
+            int frameIndex = pageTable.get(page.getId());
+            int pageStart = frameIndex * pageBytes;
             raf.seek(pageStart);
-            raf.write(buffer.array(), pageStart, pageStart + pageBytes);
+            raf.write(buffer.array(), pageStart, pageBytes);
             return true;
         } catch (FileNotFoundException ex) {
             System.err.println("Could not create binary file.");

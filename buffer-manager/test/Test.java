@@ -15,6 +15,7 @@ public class Test {
                 BufferManagerTest::overfillBuffer,
                 BufferManagerTest::evictPage,
                 BufferManagerTest::lruLongerTest,
+                IMDbTest::datasetTest,
                 // add new test cases here
         };
 
