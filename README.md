@@ -27,8 +27,8 @@
 
 1. **Clone the Repository**
    ```sh
-   git clone https://github.com/your-repo/cs645-labs.git
-   cd cs645-labs
+   git clone https://github.com/06tron/cs645-labs.git
+   cd cs645-labs/buffer-manager
    ```
 
 2. **Download Dependencies**

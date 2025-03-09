@@ -2,4 +2,5 @@ build/
 data/
 data.bin
 .DS_Store
+lib/
 .vscode/
