@@ -54,7 +54,7 @@ public class IMDbPage implements Page {
         buffer.position(rowStart);
         buffer.get(movieId); // retrieve data from buffer
         buffer.get(title);
-        rows[rowId] = new Row(movieId, title);
+        rows[rowId] = new OriginalRow(movieId, title);
         return rows[rowId];
     }
 

@@ -2,8 +2,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class Row {
-    private byte[] movieId;
-    private byte[] title;
+    public byte[] movieId;
+    public byte[] title;
+
+    public Row() {}
 
     public Row(byte[] movieId, byte[] title) {
         this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
