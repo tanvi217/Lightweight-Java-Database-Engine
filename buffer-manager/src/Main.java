@@ -5,7 +5,7 @@ public class Main {
     public static void main(String[] args) {
         BufferManager bufferManager = new BufferManagerLRU(Constants.BUFFER_SIZE);
         Utilities.loadDataset(bufferManager, Constants.IMDB_FILE_PATH);
-        // bufferManagerLRUTests();
+        //bufferManagerLRUTests();
     }
 
     private static void bufferManagerLRUTests(){
@@ -35,13 +35,16 @@ public class Main {
         //now after we added some pages let's actually try writing something to them...
         try{
             Page page = bm.getPage(0);
-            System.out.println(page.getRow(0));
+            Row currRow = page.getRow(0);
+            System.out.println("HERE");
+            System.out.println(currRow.getMovieId());
+            System.out.println(currRow.getTitle());
             
             byte[] id = "tt0000001".getBytes();
             byte[] title = "Carmencita".getBytes();
             Row r = new Row(id, title);
             page.insertRow(r);
-            System.out.println(page.getRow(1));
+            System.out.println(page.getRow(1).getTitle());
             bm.markDirty(0);
             bm.unpinPage(0);
             bm.createPage();

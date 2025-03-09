@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class Row {
@@ -10,6 +11,14 @@ public class Row {
     public Row(byte[] movieId, byte[] title) {
         this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
         this.title = addPadding(title, Constants.TITLE_SIZE);
+    }
+
+    public String getMovieId(){
+        return new String(this.movieId, StandardCharsets.UTF_8);
+    }
+
+    public String getTitle(){
+        return new String(this.title, StandardCharsets.UTF_8);
     }
 
     private byte[] addPadding(byte[] input, int requiredLength) {
