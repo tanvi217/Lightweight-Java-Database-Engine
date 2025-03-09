@@ -121,8 +121,6 @@ public class BufferManagerTest {
             p[2] = bm.createPage();
             // 0,1  1,1  2,1
             p[3] = bm.createPage();
-        } catch (IOException e) {
-            return "IO error: " + e.toString();
         } catch (Exception e) {
             caughtError = true;
         }
@@ -143,8 +141,6 @@ public class BufferManagerTest {
             // 0,1  1,0  2,1
             p[3] = bm.createPage();
             // 0,1  3,1  2,1
-        } catch (IOException e) {
-            return "IO error: " + e.toString();
         } catch (Exception e) {
             e.printStackTrace();
             return "Failed due to unexpected error: " + e.toString();
@@ -167,8 +163,6 @@ public class BufferManagerTest {
             // 0,1  1,0  2,1  -,0
             p[3] = bm.createPage();
             p[4] = bm.createPage();
-        } catch (IOException e) {
-            return "IO error: " + e.toString();
         } catch (Exception e) {
             e.printStackTrace();
             return "Failed due to unexpected error: " + e.toString();
@@ -177,8 +171,6 @@ public class BufferManagerTest {
         try {
             // 0,1  4,1  2,1  3,1
             p[5] = bm.createPage(); // error
-        } catch (IOException e) {
-            return "IO error: " + e.toString();
         } catch (Exception e) {
             // no unpinned pages
             foundError[0] = true;
@@ -188,8 +180,6 @@ public class BufferManagerTest {
             bm.unpinPage(p[0].getId());
             // 0,1  4,1  2,1  3,1
             p[5] = bm.createPage(); // error
-        } catch (IOException e) {
-            return "IO error: " + e.toString();
         } catch (Exception e) {
             // no unpinned pages (pins on p[0] went from 1 to 2 to 1, still not
             // zero even though unpinPage was called)
@@ -202,8 +192,6 @@ public class BufferManagerTest {
             bm.unpinPage(p[4].getId());
             bm.unpinPage(p[2].getId());
             bm.unpinPage(p[3].getId());
-        } catch (IOException e) {
-            return "IO error: " + e.toString();
         } catch (Exception e) {
             e.printStackTrace();
             return "Failed due to unexpected error: " + e.toString();

@@ -3,18 +3,24 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Iterator;
 
+// Buffer manager that uses a Least Recently Used (LRU) policy for page replacement
+// Buffer manager maintains a buffer pool of pages in memory
+// Buffer manager consists of frames, each frame holds a page
 public class LRUBufferManager extends BufferManager {
 
+    // abstract class BufferManager stores 'int bufferSize', the number of frames in buffer pool
     private int pageBytes;
     private ByteBuffer buffer;
     private String binFile;
-    private LinkedHashMap<Integer, Integer> pageTable;
-    private Page[] bufferPages;
-    private boolean[] isDirty;
-    private int[] pinCount;
+    private LinkedHashMap<Integer, Integer> pageTable; // pageId : frame index
+    private Page[] bufferPages; // Array of pages in memory, indexed by frame index
+    private boolean[] isDirty; // Dirty bit for each frame
+    private int[] pinCount; // Pin count for each frame
     private int nextPageId;
+    private boolean debugPrinting;
 
     /**
      * The LinkedHashMap pageTable is initialized with parameters (initialCapacity,
@@ -31,8 +37,9 @@ public class LRUBufferManager extends BufferManager {
      * @param pageKB Number of kibibytes in a page.
      * @param binaryFileName Relative path to binary file.
      */
-    public LRUBufferManager(int numFrames, int pageKB, String binaryFileName) {
+    public LRUBufferManager(int numFrames, int pageKB, String binaryFileName, boolean debugPrinting) {
         super(numFrames);
+        this.debugPrinting = debugPrinting;
         pageBytes = pageKB * 1024;
         buffer = ByteBuffer.allocate(bufferSize * pageBytes);
         binFile = binaryFileName;
@@ -50,8 +57,12 @@ public class LRUBufferManager extends BufferManager {
     /**
      * For use with IMDb data. Select which Page implementation to use here.
      */
+    public LRUBufferManager(int numFrames, boolean debugPrinting) {
+        this(numFrames, 4, Constants.DATA_BIN_FILE, debugPrinting);
+    }
+
     public LRUBufferManager(int numFrames) {
-        this(numFrames, 4, Constants.DATA_BIN_FILE);
+        this(numFrames, 4, Constants.DATA_BIN_FILE, false);
     }
 
     /**
@@ -110,6 +121,9 @@ public class LRUBufferManager extends BufferManager {
         int frameIndex = pageTable.get(oldPageId);
         if (isDirty[frameIndex]) {
             writePageToDisk(oldPageId);
+            if (debugPrinting) {
+                System.err.println("Wrote page " + oldPageId + " to disk");
+            }
         }
         if (!newPageIsEmpty) {
             readPageFromDisk(newPageId, frameIndex);
@@ -119,6 +133,9 @@ public class LRUBufferManager extends BufferManager {
         bufferPages[frameIndex] = getPageObject(newPageId, frameIndex, newPageIsEmpty);
         isDirty[frameIndex] = newPageIsEmpty; // newly created page is marked dirty
         pinCount[frameIndex] = 1;
+        if (debugPrinting) {
+            System.out.println("Added page " + newPageId + " to frame " + frameIndex);
+        }
     }
 
     /**
@@ -131,6 +148,9 @@ public class LRUBufferManager extends BufferManager {
             int pageId = lruPageIds.next();
             int frameIndex = pageTable.get(pageId);
             if (pinCount[frameIndex] == 0) {
+                if (debugPrinting) {
+                    System.out.println("Found least recently used page " + pageId);
+                }
                 return pageId;
             }
         }
@@ -140,6 +160,7 @@ public class LRUBufferManager extends BufferManager {
     @Override
     public Page getPage(int pageId) {
         if (pageId < 0 || pageId >= nextPageId) {
+            System.out.println("Invalid page id, requested id: " + pageId + " highest id is: " + (nextPageId - 1));
             throw new IllegalArgumentException("Error Getting Page " + pageId + ": ID is out of bounds");
         }
         if (pageTable.containsKey(pageId)) {
@@ -147,11 +168,17 @@ public class LRUBufferManager extends BufferManager {
             pageTable.remove(pageId); // remove so that insertion resets pageId's position in pageTable.keySet()
             pageTable.put(pageId, frameIndex);
             pinCount[frameIndex] += 1;
+            if (debugPrinting) {
+                System.out.println("Cache hit: Page " + pageId);
+            }
             return bufferPages[frameIndex];
         }
         int lruPageId = pageIdOfLRUPage();
         int frameIndex = pageTable.get(lruPageId);
         overwritePage(lruPageId, pageId, false); // sets pin count to 1
+        if (debugPrinting) {
+            System.out.println("Cache miss: Loaded Page " + pageId + " from disk");
+        }
         return bufferPages[frameIndex];
     }
 
@@ -171,6 +198,9 @@ public class LRUBufferManager extends BufferManager {
         }
         int frameIndex = pageTable.get(pageId);
         isDirty[frameIndex] = true;
+        if (debugPrinting) {
+            System.out.println("Marked page " + pageId + " as dirty");
+        }
     }
 
     @Override

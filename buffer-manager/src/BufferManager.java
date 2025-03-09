@@ -1,5 +1,3 @@
-import java.io.IOException;
-
 public abstract class BufferManager {
 
     final int bufferSize;
@@ -31,7 +29,7 @@ public abstract class BufferManager {
      * @return The Page object whose content is stored in a frame of the buffer
      * pool manager.
      */
-    abstract Page getPage(int pageId) throws IOException;
+    abstract Page getPage(int pageId);
 
     /**
      * Creates a new page. The page is immediately pinned.
@@ -45,7 +43,7 @@ public abstract class BufferManager {
      * @return The Page object whose content is stored in a frame of the buffer
      * pool manager.
      */
-    abstract Page createPage() throws IOException;
+    abstract Page createPage();
 
     /**
      * Marks a page as dirty, indicating it needs to be written to disk before
