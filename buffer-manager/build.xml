@@ -3,7 +3,7 @@
     <property name="src-dir" location="src" />
     <property name="test-dir" location="test" />
     <property name="build-dir" location="build" />
-    <property name="lib-dir" location="lib" />
+    <property name="lib-dir" location="../lib" />
     <property name="junit.jar" location="${lib-dir}/junit-4.13.2.jar" />
     <property name="hamcrest.jar" location="${lib-dir}/hamcrest-core-1.3.jar" />
 
@@ -23,11 +23,15 @@
         <javac destdir="${build-dir}" includeAntRuntime="false">
             <src path="${src-dir}" />
             <src path="${test-dir}" />
+            <classpath>
+                <pathelement path="${junit.jar}" />
+                <pathelement path="${hamcrest.jar}" />
+            </classpath>
         </javac>
     </target>
 
     <target name="test" depends="compile-test">
-        <java classname="Test" classpath="${build-dir}" />
+        <java classname="BufferManagerTest" classpath="${build-dir}" />
     </target>
 
     <target name="junit-tests" depends="compile-test">

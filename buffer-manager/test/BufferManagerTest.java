@@ -1,17 +1,39 @@
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * Comments are intended to give an idea of what the buffer might look like, but
- * the real contents could differ depending on implementation.
+ * the real contents could differ depending on implementation. Adapted to work with JUnit.
  */
 public class BufferManagerTest {
+
+    public static BufferManager getNewBM(int bufferSize) {
+        // change to whichever BufferManager extension you want to test
+        return new LRUBufferManager(bufferSize);
+    }
+
+    public static void main(String[] args) {
+
+        // test cases, each has no arguments and returns a string result
+        @SuppressWarnings("unchecked")
+        Supplier<String>[] tests = new Supplier[] {
+                BufferManagerTest::overfillBuffer,
+                BufferManagerTest::evictPage,
+                BufferManagerTest::lruLongerTest
+        };
+
+        for (int i = 0; i < tests.length; ++i) {
+            System.out.println("TEST " + (i + 1) + " RESULT: " + tests[i].get());
+        }
+
+    }
 
     public static String overfillBuffer() {
         int bufferSize = 3;
         int totalPages = 4;
         Page[] p = new Page[totalPages];
-        BufferManager bm = Test.getNewBM(bufferSize);
+        BufferManager bm = getNewBM(bufferSize);
         boolean caughtError = false;
         try {
             // -,0  -,0  -,0
@@ -32,7 +54,7 @@ public class BufferManagerTest {
         int bufferSize = 3;
         int totalPages = 4;
         Page[] p = new Page[totalPages];
-        BufferManager bm = Test.getNewBM(bufferSize);
+        BufferManager bm = getNewBM(bufferSize);
         try {
             // -,0  -,0  -,0
             p[0] = bm.createPage();
@@ -55,7 +77,7 @@ public class BufferManagerTest {
         int bufferSize = 4;
         int totalPages = 8;
         Page[] p = new Page[totalPages];
-        BufferManager bm = Test.getNewBM(bufferSize);
+        BufferManager bm = getNewBM(bufferSize);
         try {
             // -,0  -,0  -,0  -,0
             p[0] = bm.createPage();
