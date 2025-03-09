@@ -13,8 +13,8 @@ import java.util.Map;
 class BufferManagerLRU extends BufferManager {
     private int bufferSize; // Number of frames in buffer pool
     private Page[] bufferPool; // Array of pages in memory, indexed by frame index
-    private boolean[] isDirty; // Dirty bit for each page/frame
-    private int[] isPinned; // flag to indicate if page is pinned, flag since implementation is single threaded
+    private boolean[] isDirty; // Dirty bit for each frame
+    private int[] isPinned; // Pin count for each frame
     private Map<Integer, Integer> pageTable; // pageId : frame index
     private LinkedHashMap<Integer, Boolean> lruQueue; // Queue of pageIds in LRU order
     private int nextPageId;
@@ -77,7 +77,7 @@ class BufferManagerLRU extends BufferManager {
         // If found, increment pin count and return page, make it lru
         if (pageTable.containsKey(pageId)) {
             int frameIdx = pageTable.get(pageId);
-            isPinned[frameIdx] = 1;
+            isPinned[frameIdx] += 1;
 
             updateLRUQueueWithMRUPage(pageId);
 
@@ -101,7 +101,7 @@ class BufferManagerLRU extends BufferManager {
             }
 
             int frameIdx = addPageToBufferPool(page);
-            isPinned[frameIdx] = 1; // Pinned on load
+            isPinned[frameIdx] = 1;
             updateLRUQueueWithMRUPage(pageId);
         } else {
             System.out.println("Error: Failed to load page " + pageId + " from disk");
@@ -115,13 +115,7 @@ class BufferManagerLRU extends BufferManager {
         if (pageTable.containsKey(pageId)) {
             int frameIdx = pageTable.get(pageId);
 
-            if (isPinned[frameIdx] > 0) {
-                isPinned[frameIdx] = 0;
-
-                if (printStuff) {
-                    System.out.println("Unpinned page " + pageId);
-                }
-            }
+            isPinned[frameIdx] = Math.max(0, isPinned[frameIdx] - 1);
         }
     }
 
@@ -162,6 +156,41 @@ class BufferManagerLRU extends BufferManager {
         return frameIdx;
     }
 
+    // Writes page to disk if dirty
+    // @return true if successful
+    private boolean handleDirtyPage(int pageId, int frameIdx) {
+        if (isDirty[frameIdx]) {
+            if (!writePageToDisk(bufferPool[frameIdx])) {
+                System.out.println("Error: Failed to write dirty page " + pageId + " to disk");
+
+                return false;
+            }
+
+            if (printStuff) {
+                System.err.println("Wrote page " + pageId + " to disk, marked undirty");
+            }
+
+            isDirty[frameIdx] = false;
+        }
+
+        return true;
+    }
+
+    private void fillEvictedPageFrame(int evictedPageFrame, int lastFrameIdx) {
+        if (evictedPageFrame == lastFrameIdx || lastFrameIdx < 0) {
+            return;
+        }
+
+        bufferPool[evictedPageFrame] = bufferPool[lastFrameIdx];
+        isDirty[evictedPageFrame] = isDirty[lastFrameIdx];
+        isPinned[evictedPageFrame] = isPinned[lastFrameIdx];
+        pageTable.put(bufferPool[evictedPageFrame].getId(), evictedPageFrame); // update the frame index in the page table
+
+        bufferPool[lastFrameIdx] = null;
+        isDirty[lastFrameIdx] = false;
+        isPinned[lastFrameIdx] = 0;
+    }
+
     // Evicts the least recently used page from buffer pool
     // @return true if a page was evicted, false otherwise
     private boolean isPageEvicted() {
@@ -175,38 +204,18 @@ class BufferManagerLRU extends BufferManager {
             int pageId = iterator.next();
             int frameIdx = pageTable.get(pageId);
 
-            if (isPinned[pageTable.get(pageId)] == 0) {
-                if (isDirty[pageTable.get(pageId)]) {
-                    if (!writePageToDisk(bufferPool[pageTable.get(pageId)])) {
-                        System.out.println("Error: Failed to write dirty page " + pageId + " to disk");
+            if (isPinned[frameIdx] == 0) {
+                if (isDirty[frameIdx] && !handleDirtyPage(pageId, frameIdx)) {
+                    System.out.println("Error: Failed to write dirty page " + pageId + " to disk");
 
-                        return false; // Failed to write dirty page to disk
-                    }
-                    else {
-                        if (printStuff) {
-                            System.err.println("Wrote page " + pageId + " to disk, marked undirty");
-                        }
-                    }
-
-                    isDirty[pageTable.get(pageId)] = false;
+                    return false;
                 }
 
-                int lastFrameIdx = usedFrames - 1;
+                // interchange the last frame with the frame to be evicted
+                fillEvictedPageFrame(frameIdx, usedFrames - 1);
 
-                // interchange the last frame with the frame to be evicted -> O(1)
-                if (frameIdx != lastFrameIdx) {
-                    bufferPool[frameIdx] = bufferPool[lastFrameIdx];
-                    isDirty[frameIdx] = isDirty[lastFrameIdx];
-                    isPinned[frameIdx] = isPinned[lastFrameIdx];
-                    pageTable.put(bufferPool[frameIdx].getId(), frameIdx); // update the frame index in the page table
-                }
-
-                // last frame is now empty
-                bufferPool[lastFrameIdx] = null;
-                isDirty[lastFrameIdx] = false;
-                isPinned[lastFrameIdx] = 0;
                 pageTable.remove(pageId);
-                iterator.remove();
+                lruQueue.remove(pageId);
                 usedFrames--;
 
                 if (printStuff) {
