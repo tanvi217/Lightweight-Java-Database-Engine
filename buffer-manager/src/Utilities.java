@@ -11,11 +11,11 @@ public class Utilities {
             String curRow;
             int rowsProcessed = 1;
             int possibleBufferPoolSize = Constants.BUFFER_SIZE;
-            int rowsToFill = 10;
+            int rowsToFill = 9;
             int pagesCreated = 0;
             Random rand = new Random();
 
-            bufferReader.readLine(); // Skip title row
+            curRow = bufferReader.readLine(); // Skip title row
 
             // create enough pages to ensure subsequent eviction
             for (int i = 0; i < possibleBufferPoolSize; i++) {
@@ -23,11 +23,12 @@ public class Utilities {
                 pagesCreated++;
                 int append_pid = currentPage.getId();
                 int rowId = 0;
+                curRow = bufferReader.readLine();
 
                 System.out.println("Created page with Id " + append_pid);
+                System.out.println("is page with id " + currentPage.getId() + " full? " + currentPage.isFull());
 
-                while ((curRow = bufferReader.readLine()) != null && !currentPage.isFull() && rowId < rowsToFill) {
-                    rowsProcessed++;
+                while (curRow != null && !currentPage.isFull() && rowId < rowsToFill) {
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
                     byte[] title = columns[2].getBytes();
@@ -37,16 +38,19 @@ public class Utilities {
 
                     // if row was inserted, mark the page dirty
                     if (rowId != -1) {
+                        rowsProcessed++;
                         bf.markDirty(append_pid);
 
-                        if (rowsProcessed % 100 == 0) {
+                        if (rowsProcessed % 10 == 0) {
                             System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
                             System.out.println("Processed " + rowsProcessed + " rows.");
                         }
-                    }
-                    else {
+
+                        curRow = bufferReader.readLine();
+                    } else {
                         System.err.println("rowsProcessed: " + rowsProcessed);
                         System.err.println(currentPage.getId() + " could not insert row");
+                        break;
                     }
                 }
 
@@ -56,9 +60,8 @@ public class Utilities {
 
             // getPage calls to ensure eviction
             // fill up pages pulled from buffer pool
-            for (int i = 0; i < possibleBufferPoolSize + 10; i++) {
+            for (int i = 0; i < possibleBufferPoolSize + 1; i++) {
                 int randomPageId = rand.nextInt(pagesCreated);
-                System.out.println("Querying page with Id " + randomPageId);
 
                 Page pageFromBufferPool = bf.getPage(randomPageId);
 
@@ -66,8 +69,7 @@ public class Utilities {
                     System.out.println("Queried page with Id " + pageFromBufferPool.getId());
                 }
 
-                while ((curRow = bufferReader.readLine()) != null && !pageFromBufferPool.isFull()) {
-                    rowsProcessed++;
+                while (curRow != null && !pageFromBufferPool.isFull()) {
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
                     byte[] title = columns[2].getBytes();
@@ -85,9 +87,12 @@ public class Utilities {
                             System.out.println("Processed " + rowId + " rows in page with Id " + pageFromBufferPool.getId());
                             System.out.println(rowsProcessed + " rows processed.");
                         }
+
+                        curRow = bufferReader.readLine();
                     } else {
                         System.err.println("rowsProcessed: " + rowsProcessed);
                         System.err.println(pageFromBufferPool.getId() + " could not insert row");
+                        break;
                     }
                 }
 
@@ -104,18 +109,15 @@ public class Utilities {
             System.out.println("Created page with Id " + append_pid);
 
             // load rest of the dataset
-            while ((curRow = bufferReader.readLine()) != null) {
-                rowsProcessed++;
-                System.out.println("Processing row: " + curRow);
-
+            while (curRow != null) {
+                
                 if (currentPage.isFull()) {
                     bf.unpinPage(currentPage.getId());
-                    System.out.println("Unpinned page with Id " + currentPage.getId());
+                    // System.out.println("Unpinned page with Id " + currentPage.getId());
 
                     currentPage = bf.createPage();
                     pagesCreated++;
                     append_pid = currentPage.getId();
-                    System.out.println("Created page with Id " + append_pid);
                 }
 
                 String[] columns = curRow.split("\t");
@@ -124,18 +126,21 @@ public class Utilities {
                 Row row = new Row(movieId, title);
                 int rowId = currentPage.insertRow(row);
 
-                System.out.println("Inserted row with Id " + rowId);
+                // System.out.println("Inserted row with Id " + rowId);
 
                 // if row was inserted, mark the page dirty
                 if (rowId != -1) {
                     rowsProcessed++;
                     bf.markDirty(append_pid);
 
-                    if (rowsProcessed % 100 == 0) {
+                    if (rowsProcessed % 100000 == 0) {
                         System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
                         System.out.println(rowsProcessed + " rows processed.");
                     }
-                } else {
+
+                    curRow = bufferReader.readLine();
+                }
+                else {
                     System.err.println("rowsProcessed: " + rowsProcessed);
                     System.err.println(currentPage.getId() + " could not insert row");
                 }

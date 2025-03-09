@@ -1,49 +1,50 @@
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class Row {
-    public static final int MOVIE_ID_SIZE = 9;  // movieId size: 9
-    public static final int TITLE_SIZE = 30;    // title size: 30
-    public static final int ROW_SIZE = MOVIE_ID_SIZE + TITLE_SIZE; // each row size
-
-    public byte[] movieId;
-    public byte[] title;
+    private byte[] movieId;
+    private byte[] title;
+    private static final int MOVIE_ID_SIZE = 9;
+    private static final int TITLE_SIZE = 30;
+    private static final int ROW_SIZE = MOVIE_ID_SIZE + TITLE_SIZE;
 
     public Row(byte[] movieId, byte[] title) {
-    this.movieId = new byte[MOVIE_ID_SIZE];
-    this.title = new byte[TITLE_SIZE];
+        this.movieId = addPadding(movieId, MOVIE_ID_SIZE);
+        this.title = addPadding(title, TITLE_SIZE);
+    }
 
-    // Copy movieId within the 9-byte fized size
-    System.arraycopy(movieId, 0, this.movieId, 0, Math.min(movieId.length, MOVIE_ID_SIZE));
+    // Pad or truncate to fixed size
+    private byte[] addPadding(byte[] input, int targetLength) {
+        byte[] result = new byte[targetLength];
+        System.arraycopy(input, 0, result, 0, Math.min(input.length, targetLength));
 
-    // Trim or pad title to exactly 30 bytes
-    byte[] tempTitle = Arrays.copyOf(title, TITLE_SIZE); //pads with 0s if shorter than 30
-    this.title = tempTitle;
-}
+        if (input.length < targetLength) {
+            Arrays.fill(result, input.length, targetLength, (byte) 0);
+        }
+    
+        return result;
+    }
 
-//byte array to write row to pages
-public byte[] serialize() {
-    ByteBuffer buffer = ByteBuffer.allocate(ROW_SIZE); //create 39 byte buffer
-    buffer.put(movieId, 0, MOVIE_ID_SIZE);  //movieId into buffer
-    buffer.put(title, 0, TITLE_SIZE);  // title into buffer
-    return buffer.array();
-}
+    public byte[] serialize() {
+        ByteBuffer buffer = ByteBuffer.allocate(ROW_SIZE);
 
-public static Row deserialize(byte[] data) {
-    ByteBuffer buffer = ByteBuffer.wrap(data);
-    byte[] movieId = new byte[MOVIE_ID_SIZE]; 
-    byte[] title = new byte[TITLE_SIZE];
-    buffer.get(movieId);//read first 9 bytes to movieId
-    buffer.get(title); //read next 30 bytes to movieId
-    return new Row(movieId, title);
-}
+        buffer.put(movieId);
+        buffer.put(title);
 
+        return buffer.array();
+    }
 
-//debug
-@Override
-public String toString() {
-    return "Movie ID: " + new String(movieId, StandardCharsets.UTF_8).trim() +
-            ", Title: " + new String(title, StandardCharsets.UTF_8).trim();
-}
+    public static Row deserialize(byte[] data) {
+        if (data.length != ROW_SIZE) {
+            throw new IllegalArgumentException("Row data must be exactly 39 bytes");
+        }
+
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+        byte[] movieId = new byte[MOVIE_ID_SIZE];
+        byte[] title = new byte[TITLE_SIZE];
+        buffer.get(movieId);
+        buffer.get(title);
+
+        return new Row(movieId, title);
+    }
 }
