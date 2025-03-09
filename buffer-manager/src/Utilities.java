@@ -14,6 +14,8 @@ public class Utilities {
             int rowsToFill = 9;
             int pagesCreated = 0;
             Random rand = new Random();
+            boolean skipLongMovieId = true;
+            int skippedMovies = 0;
 
             curRow = bufferReader.readLine(); // Skip title row
 
@@ -26,11 +28,17 @@ public class Utilities {
                 curRow = bufferReader.readLine();
 
                 System.out.println("Created page with Id " + append_pid);
-                System.out.println("is page with id " + currentPage.getId() + " full? " + currentPage.isFull());
 
                 while (curRow != null && !currentPage.isFull() && rowId < rowsToFill) {
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
+
+                    if (skipLongMovieId && movieId.length > Constants.MOVIE_ID_SIZE) {
+                        skippedMovies++;
+                        curRow = bufferReader.readLine();
+                        continue;
+                    }
+
                     byte[] title = columns[2].getBytes();
                     Row row = new Row(movieId, title);
 
@@ -55,12 +63,11 @@ public class Utilities {
                 }
 
                 bf.unpinPage(append_pid);
-                System.out.println("Unpinned page with Id " + append_pid);
             }
 
             // getPage calls to ensure eviction
             // fill up pages pulled from buffer pool
-            for (int i = 0; i < possibleBufferPoolSize + 1; i++) {
+            for (int i = 0; i < possibleBufferPoolSize + 10; i++) {
                 int randomPageId = rand.nextInt(pagesCreated);
 
                 Page pageFromBufferPool = bf.getPage(randomPageId);
@@ -72,6 +79,13 @@ public class Utilities {
                 while (curRow != null && !pageFromBufferPool.isFull()) {
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
+
+                    if (skipLongMovieId && movieId.length > Constants.MOVIE_ID_SIZE) {
+                        skippedMovies++;
+                        curRow = bufferReader.readLine();
+                        continue;
+                    }
+
                     byte[] title = columns[2].getBytes();
 
                     Row row = new Row(movieId, title);
@@ -97,23 +111,18 @@ public class Utilities {
                 }
 
                 bf.unpinPage(pageFromBufferPool.getId());
-
-                System.out.println("Unpinned page with Id " + pageFromBufferPool.getId());
             }
 
-            System.out.println("Finished querying.");
+            System.out.println("Finished querying. Processing rest of the dataset.");
 
             Page currentPage = bf.createPage();
             pagesCreated++;
             int append_pid = currentPage.getId();
-            System.out.println("Created page with Id " + append_pid);
 
-            // load rest of the dataset
             while (curRow != null) {
                 
                 if (currentPage.isFull()) {
                     bf.unpinPage(currentPage.getId());
-                    // System.out.println("Unpinned page with Id " + currentPage.getId());
 
                     currentPage = bf.createPage();
                     pagesCreated++;
@@ -122,29 +131,35 @@ public class Utilities {
 
                 String[] columns = curRow.split("\t");
                 byte[] movieId = columns[0].getBytes();
+
+                if (skipLongMovieId && movieId.length > Constants.MOVIE_ID_SIZE) {
+                    skippedMovies++;
+                    curRow = bufferReader.readLine();
+                    continue;
+                }
+
                 byte[] title = columns[2].getBytes();
                 Row row = new Row(movieId, title);
                 int rowId = currentPage.insertRow(row);
-
-                // System.out.println("Inserted row with Id " + rowId);
 
                 // if row was inserted, mark the page dirty
                 if (rowId != -1) {
                     rowsProcessed++;
                     bf.markDirty(append_pid);
 
-                    if (rowsProcessed % 100000 == 0) {
+                    if (rowsProcessed % 1000000 == 0) {
                         System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
                         System.out.println(rowsProcessed + " rows processed.");
                     }
 
                     curRow = bufferReader.readLine();
                 }
-                else {
-                    System.err.println("rowsProcessed: " + rowsProcessed);
-                    System.err.println(currentPage.getId() + " could not insert row");
-                }
             }
+
+            bf.unpinPage(currentPage.getId());
+            System.out.println(skippedMovies + " rows skipped due to long movieId.");
+            System.out.println("Processed " + rowsProcessed + " rows, Created " + pagesCreated + " pages.");
+            System.out.println("Finished loading dataset.");
         } catch (Exception e) {
             e.printStackTrace();
         }

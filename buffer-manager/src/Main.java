@@ -3,9 +3,9 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        // BufferManager bufferManager = new BufferManagerLRU(Constants.BUFFER_SIZE);
-        // Utilities.loadDataset(bufferManager, Constants.IMDB_FILE_PATH);
-        bufferManagerLRUTests();
+        BufferManager bufferManager = new BufferManagerLRU(Constants.BUFFER_SIZE);
+        Utilities.loadDataset(bufferManager, Constants.IMDB_FILE_PATH);
+        // bufferManagerLRUTests();
     }
 
     private static void bufferManagerLRUTests(){

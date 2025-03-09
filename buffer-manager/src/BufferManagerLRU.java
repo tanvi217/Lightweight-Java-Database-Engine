@@ -49,7 +49,8 @@ class BufferManagerLRU extends BufferManager {
             throw new IllegalStateException("Buffer is full, all pages are pinned, cannot create new page.");
         }
 
-        Page page = new BinaryPage(nextPageId++); // increment nextPageId post page creation
+        Page page = new BinaryPage(nextPageId);
+        nextPageId++;
         int frameIdx = addPageToBufferPool(page);
         isPinned[frameIdx] = 1;
         lruQueue.put(page.getId(), false); // Add to LRU queue when created
@@ -88,6 +89,8 @@ class BufferManagerLRU extends BufferManager {
             return bufferPool[frameIdx];
         }
 
+        // If page not in buffer pool, load it from disk
+        // If buffer is full and all pages are pinned, throw an error
         if (usedFrames >= bufferSize && !isPageEvicted()) {
             System.out.println("Error: Cannot load page " + pageId + ". Buffer is full, all pages are pinned.");
             throw new IllegalStateException("Buffer is full, all pages are pinned, cannot get page.");
@@ -125,9 +128,9 @@ class BufferManagerLRU extends BufferManager {
             int frameIdx = pageTable.get(pageId);
             isDirty[frameIdx] = true;
 
-            // if (printStuff) {
-            //     System.out.println("Marked page " + pageId + " as dirty");
-            // }
+            if (printStuff) {
+                System.out.println("Marked page " + pageId + " as dirty");
+            }
         }
     }
 
@@ -145,7 +148,8 @@ class BufferManagerLRU extends BufferManager {
             return -1;
         }
 
-        int frameIdx = usedFrames++;
+        int frameIdx = usedFrames;
+        usedFrames++;
         bufferPool[frameIdx] = page;
         pageTable.put(page.getId(), frameIdx);
 
@@ -246,24 +250,23 @@ class BufferManagerLRU extends BufferManager {
     }
 
     // Reads bytes from disk
-    // todo: implement page.deserialize(data) and test
     private Page readPageFromDisk(int pageId) {
         if (pageId >= nextPageId) {
             return null; // no such page in disk
         }
 
         try (RandomAccessFile raf = new RandomAccessFile(Constants.BINARY_FILE_PATH, "r")) {
-            raf.seek((long) pageId * Constants.PAGE_SIZE);
             byte[] data = new byte[Constants.PAGE_SIZE];
+            raf.seek(pageId * Constants.PAGE_SIZE);
             raf.readFully(data);
 
             Page pageFromDisk = new BinaryPage(pageId);
-
             boolean success = pageFromDisk.deserialize(data); 
+
             if (!success) {
                 System.out.println("Something went wrong in deserialization, there was not enough space.");
             } else {
-                System.out.println("Deserialized page " + pageId + " from disk");
+                System.out.println("Deserialized page " + pageId + " from disk" + " with " + data.length + " bytes");
             }
 
             return pageFromDisk;
@@ -280,13 +283,14 @@ class BufferManagerLRU extends BufferManager {
 
     // Writes bytes to disk
     // @return true if successful
-    // caller to mark the page dirty and update lru
-    // TODO: page.serialize() should return byte[], implement page.serialize(), test using loaddatabase
     private boolean writePageToDisk(Page page) {
         try (RandomAccessFile raf = new RandomAccessFile(Constants.BINARY_FILE_PATH, "rw")) {
-            raf.seek((long) page.getId() * Constants.PAGE_SIZE);
-            raf.write(page.serialize()); // TODO page.serialize() should return byte[]
-            // System.out.println("Wrote page " + page.getId() + " to disk");
+            raf.seek(page.getId() * Constants.PAGE_SIZE);
+            raf.write(page.serialize());
+
+            if (printStuff) {
+                System.out.println("Wrote page " + page.getId() + " to disk with " + page.serialize().length + " bytes");
+            }
 
             return true;
         } catch (FileNotFoundException ex) {
