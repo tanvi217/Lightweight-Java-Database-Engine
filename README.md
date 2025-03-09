@@ -24,24 +24,30 @@
     ant
     ```
 
+7. To test the code, run `ant test`. Text files for the test output will be created in the `test` directory.
+
 ### Directory Structure
 
 The directory structure of the project is as follows:
 
 ```
 cs645-labs
-├── build.xml
 ├── lib
 │   ├── hamcrest-core-1.3.jar
 │   └── junit-4.13.2.jar
-├── src
-│   ├── BufferManagerLRU.java
-│   ├── Constants.java
-│   └── Main.java
-|   ...
-└── test
-    └── BufferManagerLRUTest.java
-    ...
+└── buffer-manager
+    ├── src
+    │   ├── BufferManager.java
+    │   ├── Page.java
+    │   └── ...
+    ├── test
+    │   ├── TEST-BufferManagerTest.txt
+    │   ├── BufferManagerTest.java
+    │   └── ...
+    ├── data 
+    │   └── title.basics.tsv
+    └── build.xml
+
 ```
 
 ### group members

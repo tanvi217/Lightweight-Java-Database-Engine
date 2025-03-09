@@ -38,7 +38,7 @@
                 <pathelement path="${hamcrest.jar}" />
             </classpath>
             <formatter type="plain" />
-            <batchtest fork="yes" todir="${build-dir}">
+            <batchtest fork="yes" todir="${test-dir}">
                 <fileset dir="${test-dir}">
                     <include name="**/*Test.java" />
                 </fileset>
