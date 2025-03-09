@@ -27,13 +27,16 @@ public class IMDbPage implements Page {
      *                   the same buffer manager.
      * @param buffer     A reference to the buffer initialized in LRUBufferManager.
      */
-    public IMDbPage(int pageId, int frameIndex, int pageBytes, ByteBuffer buffer) {
+    public IMDbPage(int pageId, int frameIndex, int pageBytes, ByteBuffer buffer, boolean isEmpty) {
         this.pageId = pageId;
         this.buffer = buffer;
         maxRows = (pageBytes - 1) / rowBytes;
         pageStart = frameIndex * pageBytes;
         lastByteIndex = pageStart + pageBytes - 1;
         rows = new Row[maxRows];
+        if (isEmpty) {
+            buffer.put(lastByteIndex, (byte) 0);
+        }
         nextRowId = (int) buffer.get(lastByteIndex);
     }
 

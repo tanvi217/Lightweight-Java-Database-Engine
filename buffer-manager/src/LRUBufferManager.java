@@ -74,8 +74,8 @@ public class LRUBufferManager extends BufferManager {
         }
     }
 
-    private Page getNewPage(int pageId, int frameIndex) {
-        return new IMDbPage(pageId, frameIndex, pageBytes, buffer); // could change Page implementation here
+    private Page getNewPage(int pageId, int frameIndex, boolean isEmpty) {
+        return new IMDbPage(pageId, frameIndex, pageBytes, buffer, isEmpty); // could change Page implementation here
     }
 
     // Reads bytes from disk
@@ -84,10 +84,10 @@ public class LRUBufferManager extends BufferManager {
             throw new IllegalArgumentException("Page ID out of bounds.");
         }
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "r")) {
-            raf.seek((long) frameIndex * pageBytes);
-            byte[] data = new byte[pageBytes];
-            raf.readFully(data);
-            return getNewPage(pageId, frameIndex);
+            int pageStart = frameIndex * pageBytes;
+            raf.seek((long) pageId * pageBytes);
+            raf.read(buffer.array(), pageStart, pageBytes);
+            return getNewPage(pageId, frameIndex, false);
         } catch (FileNotFoundException ex) {
             System.err.println("Could not find binary file.");
             throw ex;
@@ -173,7 +173,7 @@ public class LRUBufferManager extends BufferManager {
     public Page createPage() throws IOException {
         int lruPageId = leastRecentlyUsedPage();
         int frameIndex = pageTable.get(lruPageId);
-        Page pageObject = getNewPage(nextPageId, frameIndex); // inserts nextPageId into pageTable
+        Page pageObject = getNewPage(nextPageId, frameIndex, true); // inserts nextPageId into pageTable
         overwriteFrame(lruPageId, pageObject);
         nextPageId += 1;
         isDirty[frameIndex] = true;
