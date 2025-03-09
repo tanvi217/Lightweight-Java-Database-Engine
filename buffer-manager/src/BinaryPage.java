@@ -1,12 +1,10 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.nio.ByteBuffer;
 
 public class BinaryPage implements Page {
     private int pid;
     private List<Row> rows;
-    private static final int PAGE_SIZE = 4096;
-    private static final int ROW_SIZE = 39;    // 9 for movieId + 30 for title
-    private static final int MAX_ROWS = (PAGE_SIZE - 4) / ROW_SIZE;
 
     public BinaryPage(int pid) {
         this.pid = pid;
@@ -21,12 +19,12 @@ public class BinaryPage implements Page {
     @Override
     public boolean isFull() {
         // 4 bytes for row count, then 39 bytes per row
-        return rows.size() >= MAX_ROWS;
+        return rows.size() >= Constants.MAX_ROWS;
     }
 
     @Override
     public int insertRow(Row row) {
-        if (4 + (rows.size() * ROW_SIZE) + ROW_SIZE <= PAGE_SIZE) {
+        if (4 + (rows.size() * Constants.ROW_SIZE) + Constants.ROW_SIZE <= Constants.PAGE_SIZE) {
             rows.add(row);
             return rows.size(); // Return the index of the inserted row
         }
@@ -42,11 +40,11 @@ public class BinaryPage implements Page {
     @Override
     // Serialize page to byte array
     public byte[] serialize() {
-        ByteBuffer buffer = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buffer = ByteBuffer.allocate(Constants.PAGE_SIZE);
         
         int rowCount = rows.size();
-        
-        if (4 + rowCount * ROW_SIZE > PAGE_SIZE) {
+
+        if (4 + rowCount * Constants.ROW_SIZE > Constants.PAGE_SIZE) {
             throw new IllegalStateException("Too many rows: " + rowCount);
         }
 
@@ -67,13 +65,14 @@ public class BinaryPage implements Page {
     @Override
     // Deserialize byte array into this Page, return true if successful
     public boolean deserialize(byte[] data) {
-        if (data == null || data.length != PAGE_SIZE) {
+        if (data == null || data.length != Constants.PAGE_SIZE) {
             return false;
         }
         ByteBuffer buffer = ByteBuffer.wrap(data);
         
         int rowCount = buffer.getInt();
-        if (rowCount < 0 || rowCount > (PAGE_SIZE - 4) / ROW_SIZE) {
+        
+        if (rowCount < 0 || rowCount > (Constants.PAGE_SIZE - 4) / Constants.ROW_SIZE) {
             return false;
         }
 
@@ -81,13 +80,15 @@ public class BinaryPage implements Page {
 
         try {
             for (int i = 0; i < rowCount; i++) {
-                byte[] rowData = new byte[ROW_SIZE];
+                byte[] rowData = new byte[Constants.ROW_SIZE];
                 buffer.get(rowData);
                 rows.add(Row.deserialize(rowData));
             }
+
             return true;
         } catch (Exception e) {
             rows.clear();
+
             return false;
         }
     }

@@ -4,13 +4,10 @@ import java.util.Arrays;
 public class Row {
     private byte[] movieId;
     private byte[] title;
-    private static final int MOVIE_ID_SIZE = 9;
-    private static final int TITLE_SIZE = 30;
-    private static final int ROW_SIZE = MOVIE_ID_SIZE + TITLE_SIZE;
 
     public Row(byte[] movieId, byte[] title) {
-        this.movieId = addPadding(movieId, MOVIE_ID_SIZE);
-        this.title = addPadding(title, TITLE_SIZE);
+        this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
+        this.title = addPadding(title, Constants.TITLE_SIZE);
     }
 
     // Pad or truncate to fixed size
@@ -26,7 +23,7 @@ public class Row {
     }
 
     public byte[] serialize() {
-        ByteBuffer buffer = ByteBuffer.allocate(ROW_SIZE);
+        ByteBuffer buffer = ByteBuffer.allocate(Constants.ROW_SIZE);
 
         buffer.put(movieId);
         buffer.put(title);
@@ -35,13 +32,13 @@ public class Row {
     }
 
     public static Row deserialize(byte[] data) {
-        if (data.length != ROW_SIZE) {
+        if (data.length != Constants.ROW_SIZE) {
             throw new IllegalArgumentException("Row data must be exactly 39 bytes");
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(data);
-        byte[] movieId = new byte[MOVIE_ID_SIZE];
-        byte[] title = new byte[TITLE_SIZE];
+        byte[] movieId = new byte[Constants.MOVIE_ID_SIZE];
+        byte[] title = new byte[Constants.TITLE_SIZE];
         buffer.get(movieId);
         buffer.get(title);
 
