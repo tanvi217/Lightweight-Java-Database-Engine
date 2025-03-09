@@ -31,11 +31,7 @@
     </target>
 
     <target name="test" depends="compile-test">
-        <java classname="BufferManagerTest" classpath="${build-dir}" />
-    </target>
-
-    <target name="junit-tests" depends="compile-test">
-        <junit printsummary="true" haltonfailure="true">
+        <junit printsummary="yes" haltonfailure="yes">
             <classpath>
                 <pathelement path="${build-dir}" />
                 <pathelement path="${junit.jar}" />

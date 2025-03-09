@@ -1,3 +1,5 @@
+import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Supplier;
@@ -14,6 +16,11 @@ public class BufferManagerTest {
     }
 
     public static void main(String[] args) {
+        new BufferManagerTest().threeOlderTestCases();
+    }
+
+    @Test
+    public void threeOlderTestCases() {
 
         // test cases, each has no arguments and returns a string result
         @SuppressWarnings("unchecked")
@@ -24,7 +31,9 @@ public class BufferManagerTest {
         };
 
         for (int i = 0; i < tests.length; ++i) {
-            System.out.println("TEST " + (i + 1) + " RESULT: " + tests[i].get());
+            String result = tests[i].get();
+            System.out.println("TEST " + (i + 1) + " RESULT: " + result);
+            assertEquals(result.substring(0, 6), "Passed");
         }
 
     }
