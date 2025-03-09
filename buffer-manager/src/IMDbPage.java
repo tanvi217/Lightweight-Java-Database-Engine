@@ -106,4 +106,14 @@ public class IMDbPage implements Page {
         throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
     }
 
+    @Override
+    public String toString() {
+        int pageBytes = lastByteIndex + 1 - pageStart;
+        String info = String.format("PAGE  id: %02d  rows: %03d  start-index: %04d  full-length: %d bytes", pageId, nextRowId, pageStart, pageBytes);
+        if (nextRowId != buffer.get(lastByteIndex)) {
+            return "INCONSISTENT " + info;
+        }
+        return info;
+    }
+
 }
