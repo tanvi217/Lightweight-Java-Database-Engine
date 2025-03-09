@@ -109,7 +109,8 @@ public class IMDbPage implements Page {
     @Override
     public String toString() {
         int pageBytes = lastByteIndex + 1 - pageStart;
-        String info = String.format("PAGE  id: %02d  rows: %03d  start-index: %04d  full-length: %d bytes", pageId, nextRowId, pageStart, pageBytes);
+        int firstInt = buffer.getInt(pageStart);
+        String info = String.format("PAGE  id: %02d  rows: %03d  start-index: %04d  full-length: %d bytes  first-int: %d", pageId, nextRowId, pageStart, pageBytes, firstInt);
         if (nextRowId != buffer.get(lastByteIndex)) {
             return "INCONSISTENT " + info;
         }

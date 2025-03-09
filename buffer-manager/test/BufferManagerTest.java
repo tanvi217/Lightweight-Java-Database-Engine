@@ -1,6 +1,10 @@
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import org.junit.Before;
 import org.junit.Test;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -11,12 +15,78 @@ import java.util.function.Supplier;
 public class BufferManagerTest {
 
     public static BufferManager getNewBM(int bufferSize) {
-        // change to whichever BufferManager extension you want to test
+        // CHANGE TO WHICHEVER IMPLEMENTATION YOU WANT TO TEST
         return new LRUBufferManager(bufferSize);
+        // return new BufferManagerLRU(bufferSize, false);
     }
 
-    public static void main(String[] args) {
-        new BufferManagerTest().threeOlderTestCases();
+    private BufferManager bm;
+    private static int bufferSize = 8;
+    private static int numPages = (bufferSize * 5) / 2;
+    private static int pageBytes = 4096;
+    private static int rowsPerPage = (pageBytes - 1) / 39;
+    private static int numRows = rowsPerPage * numPages;
+
+    @Before
+    public void initializeBM() throws IOException { // runs before each test case
+        bm = getNewBM(bufferSize);
+    }
+
+    @Test
+    public void testCreatePage() throws IOException {
+        Page p = null;
+        for (int i = 0; i < bufferSize; ++i) {
+            p = bm.createPage();
+        }
+        assertNotNull(p);
+        assertEquals(bufferSize - 1, p.getId());
+    }
+
+    @Test
+    public void testUnpinPage() throws IOException {
+        Page p = null;
+        for (int i = 0; i < numPages; ++i) {
+            p = bm.createPage();
+            bm.unpinPage(p.getId());
+        }
+        assertNotNull(p);
+        assertEquals(numPages - 1, p.getId());
+    }
+
+    private Row testRow(int pageId, int rowNumber, boolean correctSizes) {
+        int movieIdBytes = correctSizes ? 9 : 4;
+        int titleBytes = correctSizes ? 30 : 4;
+        byte[] movieId = ByteBuffer.allocate(movieIdBytes).putInt(pageId).array();
+        byte[] title = ByteBuffer.allocate(titleBytes).putInt(rowNumber).array();
+        return new Row(movieId, title);
+    }
+
+    private void populateBM() throws IOException {
+        Page p = bm.createPage();
+        for (int i = 0; i < numRows; ++i) {
+            if (p.isFull()) {
+                bm.unpinPage(p.getId());
+                p = bm.createPage();
+            }
+            p.insertRow(testRow(p.getId(), i, true));
+        }
+        bm.unpinPage(p.getId());
+    }
+
+    @Test
+    public void testGetPage() throws IOException {
+        populateBM();
+        System.out.println(bm);
+        int[] getIds = {18, 3, 2, 0, 13, 12, 19, 1, 6}; // all must be less than numPages
+        for (int i = 0; i < getIds.length; ++i) {
+            Page p = bm.getPage(getIds[i]);
+            assertNotNull(p);
+            assertEquals(getIds[i], p.getId());
+            Row first = p.getRow(0);
+            int recoveredPageId = ByteBuffer.wrap(first.movieId).getInt();
+            assertEquals(getIds[i], recoveredPageId);
+            bm.unpinPage(p.getId());
+        }
     }
 
     @Test
@@ -33,7 +103,7 @@ public class BufferManagerTest {
         for (int i = 0; i < tests.length; ++i) {
             String result = tests[i].get();
             System.out.println("TEST " + (i + 1) + " RESULT: " + result);
-            assertEquals(result.substring(0, 6), "Passed");
+            assertEquals("Passed", result.substring(0, 6));
         }
 
     }

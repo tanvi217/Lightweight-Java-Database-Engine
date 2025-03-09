@@ -1,5 +1,4 @@
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -78,66 +77,56 @@ public class LRUBufferManager extends BufferManager {
         return new IMDbPage(pageId, frameIndex, pageBytes, buffer, isEmpty); // could change Page implementation here
     }
 
-    // Reads bytes from disk
-    private Page readPageFromDisk(int pageId, int frameIndex) throws IOException {
+    /**
+     * Takes a page ID of a page which has already been created, and a reads that page from the disk into a given frame.
+     */
+    private void readPageFromDisk(int pageId, int frameIndex) throws IOException {
         if (pageId < 0 || pageId >= nextPageId) {
-            throw new IllegalArgumentException("Page ID out of bounds.");
+            throw new IllegalArgumentException("Page ID " + pageId + " out of bounds.");
         }
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "r")) {
-            int pageStart = frameIndex * pageBytes;
             raf.seek(pageId * pageBytes);
-            raf.read(buffer.array(), pageStart, pageBytes);
-            return getNewPage(pageId, frameIndex, false);
-        } catch (FileNotFoundException ex) {
-            System.err.println("Could not find binary file.");
-            throw ex;
-        } catch (IOException ex) {
-            System.err.println("Exception while reading from disk");
-            throw ex;
-        }
-    }
-
-    // Writes bytes to disk
-    // @return true if successful
-    // caller to mark the page dirty and update lru
-    private boolean writePageToDisk(Page page) throws IOException {
-        try (RandomAccessFile raf = new RandomAccessFile(binFile, "rw")) {
-            int frameIndex = pageTable.get(page.getId());
-            int pageStart = frameIndex * pageBytes;
-            raf.seek(page.getId() * pageBytes);
-            raf.write(buffer.array(), pageStart, pageBytes);
-            return true;
-        } catch (FileNotFoundException ex) {
-            System.err.println("Could not create binary file.");
-            throw ex;
-        } catch (IOException ex) {
-            System.err.println("Exception while reading from disk");
-            throw ex;
+            raf.read(buffer.array(), frameIndex * pageBytes, pageBytes);
         }
     }
 
     /**
-     * Replaces page in bufferPool at frameIndex, writing to disk if necessary.
-     * Ignores pins, and resets isDirty and pinCount at frameIndex.
+     * Given page ID of a page in the buffer, finds the correct frame and writes that frame to the disk at the location of the page.
      */
-    private void overwriteFrame(int prevPageId, Page nextPage) throws IOException {
-        int frameIndex = pageTable.get(prevPageId);
-        Page prevPage = bufferPages[frameIndex];
-        if (isDirty[frameIndex] && prevPage != null) {
-            writePageToDisk(prevPage);
+    private void writePageToDisk(int pageId) throws IOException {
+        if (pageId < 0 || !pageTable.containsKey(pageId)) {
+            throw new IllegalArgumentException("Page with ID " + pageId + " is not in the buffer.");
         }
-        pageTable.remove(prevPageId);
-        bufferPages[frameIndex] = nextPage;
+        try (RandomAccessFile raf = new RandomAccessFile(binFile, "rw")) {
+            int frameIndex = pageTable.get(pageId);
+            raf.seek(pageId * pageBytes);
+            raf.write(buffer.array(), frameIndex * pageBytes, pageBytes);
+        }
+    }
+
+    /**
+     * 
+     */
+    private void overwritePage(int oldPageId, int newPageId, boolean isEmpty) throws IOException {
+        int frameIndex = pageTable.get(oldPageId);
+        if (isDirty[frameIndex]) {
+            writePageToDisk(oldPageId);
+        }
+        if (!isEmpty) {
+            readPageFromDisk(newPageId, frameIndex);
+        }
+        pageTable.remove(oldPageId);
+        pageTable.put(newPageId, frameIndex);
+        bufferPages[frameIndex] = getNewPage(newPageId, frameIndex, isEmpty);
         isDirty[frameIndex] = false;
-        pinCount[frameIndex] = 0;
-        pageTable.put(nextPage.getId(), frameIndex);
+        pinCount[frameIndex] = 0; // reset to defaults
     }
 
     /**
      * Doesn't change any instance variables, and returns the pageId of the
      * least recently used unpinned page currently in bufferPool.
      */
-    private int leastRecentlyUsedPage() {
+    private int pageIdOfLRUPage() {
         Iterator<Integer> lruPageIds = pageTable.keySet().iterator();
         while (lruPageIds.hasNext()) {
             int pageId = lruPageIds.next();
@@ -152,7 +141,7 @@ public class LRUBufferManager extends BufferManager {
     @Override
     public Page getPage(int pageId) throws IOException {
         if (pageId < 0 || pageId >= nextPageId) {
-            throw new IllegalArgumentException("Page ID out of bounds.");
+            throw new IllegalArgumentException("Page ID " + pageId + " out of bounds.");
         }
         int frameIndex;
         if (pageTable.containsKey(pageId)) {
@@ -160,10 +149,9 @@ public class LRUBufferManager extends BufferManager {
             pageTable.remove(pageId); // remove so that insertion resets pageId's position in pageTable.keySet()
             pageTable.put(pageId, frameIndex);
         } else {
-            int lruPageId = leastRecentlyUsedPage();
+            int lruPageId = pageIdOfLRUPage();
             frameIndex = pageTable.get(lruPageId);
-            Page nextPage = readPageFromDisk(pageId, frameIndex);
-            overwriteFrame(lruPageId, nextPage);
+            overwritePage(lruPageId, pageId, false);
         }
         pinCount[frameIndex] += 1;
         return bufferPages[frameIndex];
@@ -171,14 +159,13 @@ public class LRUBufferManager extends BufferManager {
 
     @Override
     public Page createPage() throws IOException {
-        int lruPageId = leastRecentlyUsedPage();
+        int lruPageId = pageIdOfLRUPage();
         int frameIndex = pageTable.get(lruPageId);
-        Page pageObject = getNewPage(nextPageId, frameIndex, true); // inserts nextPageId into pageTable
-        overwriteFrame(lruPageId, pageObject);
+        overwritePage(lruPageId, nextPageId, true);
         nextPageId += 1;
         isDirty[frameIndex] = true;
-        pinCount[frameIndex] += 1;
-        return pageObject;
+        pinCount[frameIndex] = 1;
+        return bufferPages[frameIndex];
     }
 
     @Override
