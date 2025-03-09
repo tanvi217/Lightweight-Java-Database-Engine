@@ -9,4 +9,4 @@ public class Constants {
     public static final String IMDB_FILE_PATH = "data/title.basics.tsv"; // Relative path to the IMDB file
     public static final String IMDB_TSV_FILE = "data/title.basics.tsv";
     public static final String DATA_BIN_FILE = "data/imdb.bin";
-}
+}  
