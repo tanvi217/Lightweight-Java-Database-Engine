@@ -85,7 +85,7 @@ public class LRUBufferManager extends BufferManager {
         }
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "r")) {
             int pageStart = frameIndex * pageBytes;
-            raf.seek((long) pageId * pageBytes);
+            raf.seek(pageId * pageBytes);
             raf.read(buffer.array(), pageStart, pageBytes);
             return getNewPage(pageId, frameIndex, false);
         } catch (FileNotFoundException ex) {
@@ -104,7 +104,7 @@ public class LRUBufferManager extends BufferManager {
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "rw")) {
             int frameIndex = pageTable.get(page.getId());
             int pageStart = frameIndex * pageBytes;
-            raf.seek(pageStart);
+            raf.seek(page.getId() * pageBytes);
             raf.write(buffer.array(), pageStart, pageBytes);
             return true;
         } catch (FileNotFoundException ex) {
@@ -209,9 +209,11 @@ public class LRUBufferManager extends BufferManager {
         int[] numColumns = { 8, 8, 8, 6, 4, 4, 3, 3 };
         int rowSize = d > 7 ? 2 : numColumns[d];
         int idSize = d > 7 ? 11 : numDigits[d];
-        StringBuilder sb = new StringBuilder("max pageId " + (nextPageId - 1) + "\n");
+        String info = String.format("BUFFER  pages: %d  frames: %d  full-length: %d bytes", nextPageId, pageTable.keySet().size(), buffer.capacity());
+        StringBuilder sb = new StringBuilder(info);
         int i = 0;
         while (i < bufferSize) {
+            sb.append("\n");
             for (int j = 0; j < rowSize && i < bufferSize; ++j) {
                 Page p = bufferPages[i];
                 sb.append(" ");
@@ -222,7 +224,6 @@ public class LRUBufferManager extends BufferManager {
                 }
                 ++i;
             }
-            sb.append("\n");
         }
         return sb.toString();
     }
