@@ -74,20 +74,20 @@ public class LRUBufferManager extends BufferManager {
         }
     }
 
-    private Page getNewPage(int pageId, int frameIndex) {
-        return new IMDbPage(pageId, frameIndex, pageBytes, buffer); // could change Page implementation here
+    private Page getNewPage(int pageId, int frameIndex, boolean isEmpty) {
+        return new IMDbPage(pageId, frameIndex, pageBytes, buffer, isEmpty); // could change Page implementation here
     }
 
     // Reads bytes from disk
     private Page readPageFromDisk(int pageId, int frameIndex) throws IOException {
-        if (pageId < 0 || pageId > nextPageId) { // pageId = nextPageId during createPage
+        if (pageId < 0 || pageId >= nextPageId) {
             throw new IllegalArgumentException("Page ID out of bounds.");
         }
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "r")) {
+            int pageStart = frameIndex * pageBytes;
             raf.seek((long) pageId * pageBytes);
-            byte[] data = new byte[pageBytes];
-            raf.readFully(data);
-            return getNewPage(pageId, frameIndex);
+            raf.read(buffer.array(), pageStart, pageBytes);
+            return getNewPage(pageId, frameIndex, false);
         } catch (FileNotFoundException ex) {
             System.err.println("Could not find binary file.");
             throw ex;
@@ -151,8 +151,8 @@ public class LRUBufferManager extends BufferManager {
 
     @Override
     public Page getPage(int pageId) throws IOException {
-        if (pageId < 0) {
-            throw new IllegalArgumentException("No page can have ID less than zero.");
+        if (pageId < 0 || pageId >= nextPageId) {
+            throw new IllegalArgumentException("Page ID out of bounds.");
         }
         int frameIndex;
         if (pageTable.containsKey(pageId)) {
@@ -171,10 +171,13 @@ public class LRUBufferManager extends BufferManager {
 
     @Override
     public Page createPage() throws IOException {
-        Page pageObject = getPage(nextPageId); // inserts nextPageId into pageTable
-        int frameIndex = pageTable.get(nextPageId);
+        int lruPageId = leastRecentlyUsedPage();
+        int frameIndex = pageTable.get(lruPageId);
+        Page pageObject = getNewPage(nextPageId, frameIndex, true); // inserts nextPageId into pageTable
+        overwriteFrame(lruPageId, pageObject);
         nextPageId += 1;
         isDirty[frameIndex] = true;
+        pinCount[frameIndex] += 1;
         return pageObject;
     }
 
