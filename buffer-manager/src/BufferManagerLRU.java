@@ -266,7 +266,9 @@ class BufferManagerLRU extends BufferManager {
             if (!success) {
                 System.out.println("Something went wrong in deserialization, there was not enough space.");
             } else {
-                System.out.println("Deserialized page " + pageId + " from disk" + " with " + data.length + " bytes");
+                if (printStuff) {
+                    System.out.println("Deserialized page " + pageId + " from disk" + " with " + data.length + " bytes");
+                }
             }
 
             return pageFromDisk;

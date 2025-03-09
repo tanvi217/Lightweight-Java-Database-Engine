@@ -10,13 +10,13 @@ public class Row {
         this.title = addPadding(title, Constants.TITLE_SIZE);
     }
 
-    // Pad or truncate to fixed size
-    private byte[] addPadding(byte[] input, int targetLength) {
-        byte[] result = new byte[targetLength];
-        System.arraycopy(input, 0, result, 0, Math.min(input.length, targetLength));
+    private byte[] addPadding(byte[] input, int requiredLength) {
+        byte[] result = new byte[requiredLength];
+        int lengthToCopy = Math.min(input.length, requiredLength);
+        System.arraycopy(input, 0, result, 0, lengthToCopy);
 
-        if (input.length < targetLength) {
-            Arrays.fill(result, input.length, targetLength, (byte) 0);
+        if (input.length < requiredLength) {
+            Arrays.fill(result, input.length, requiredLength, (byte) 0);
         }
     
         return result;
@@ -32,16 +32,23 @@ public class Row {
     }
 
     public static Row deserialize(byte[] data) {
+        validateDataLength(data);
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+        byte[] movieId = extractBytes(buffer, Constants.MOVIE_ID_SIZE);
+        byte[] title = extractBytes(buffer, Constants.TITLE_SIZE);
+
+        return new Row(movieId, title);
+    }
+
+    private static void validateDataLength(byte[] data) {
         if (data.length != Constants.ROW_SIZE) {
             throw new IllegalArgumentException("Row data must be exactly 39 bytes");
         }
+    }
 
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        byte[] movieId = new byte[Constants.MOVIE_ID_SIZE];
-        byte[] title = new byte[Constants.TITLE_SIZE];
-        buffer.get(movieId);
-        buffer.get(title);
-
-        return new Row(movieId, title);
+    private static byte[] extractBytes(ByteBuffer buffer, int size) {
+        byte[] bytes = new byte[size];
+        buffer.get(bytes);
+        return bytes;
     }
 }

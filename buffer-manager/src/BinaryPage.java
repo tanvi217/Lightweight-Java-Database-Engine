@@ -5,10 +5,18 @@ import java.nio.ByteBuffer;
 public class BinaryPage implements Page {
     private int pid;
     private List<Row> rows;
+    private int recordsCount;
 
     public BinaryPage(int pid) {
         this.pid = pid;
         this.rows = new ArrayList<>();
+        this.recordsCount = 0;
+    }
+
+    public BinaryPage(int pid, List<Row> rows) {
+        this.pid = pid;
+        this.rows = rows;
+        this.recordsCount = rows.size();
     }
 
     @Override
@@ -18,76 +26,90 @@ public class BinaryPage implements Page {
 
     @Override
     public boolean isFull() {
-        // 4 bytes for row count, then 39 bytes per row
         return rows.size() >= Constants.MAX_ROWS;
     }
 
     @Override
     public int insertRow(Row row) {
-        if (4 + (rows.size() * Constants.ROW_SIZE) + Constants.ROW_SIZE <= Constants.PAGE_SIZE) {
+        if (this.recordsCount < Constants.MAX_ROWS) {
+            this.recordsCount++;
             rows.add(row);
-            return rows.size(); // Return the index of the inserted row
+
+            return this.recordsCount - 1;
         }
 
         return -1;
     }
 
     @Override
-    public Row getRow(int index) {
-        return (index >= 0 && index < rows.size()) ? rows.get(index) : null;
+    public Row getRow(int rowId) {
+        if (rowId < 0 || rowId >= this.recordsCount) {
+            return null;
+        }
+
+        return rows.get(rowId);
     }
+    
 
     @Override
-    // Serialize page to byte array
     public byte[] serialize() {
-        ByteBuffer buffer = ByteBuffer.allocate(Constants.PAGE_SIZE);
-        
-        int rowCount = rows.size();
+        ByteBuffer pageBuffer = ByteBuffer.allocate(Constants.PAGE_SIZE);
 
-        if (4 + rowCount * Constants.ROW_SIZE > Constants.PAGE_SIZE) {
-            throw new IllegalStateException("Too many rows: " + rowCount);
+        int totalSize = 4 + (recordsCount * Constants.ROW_SIZE);
+        if (totalSize > Constants.PAGE_SIZE) {
+            throw new IllegalStateException("Page overflow: " + recordsCount + " rows");
         }
 
-        buffer.putInt(rowCount);
+        pageBuffer.putInt(recordsCount);
 
-        for (Row row : rows) {
-            byte[] serializedRow = row.serialize();
-            buffer.put(serializedRow);
-        }
-        
-        while (buffer.hasRemaining()) {
-            buffer.put((byte) 0);
+        int position = 4; // Start after records count
+        int rowIndex = 0;
+
+        while (pageBuffer.hasRemaining()) {
+            if (rowIndex < recordsCount) {
+                byte[] rowBytes = rows.get(rowIndex).serialize();
+                pageBuffer.put(rowBytes);
+                position += Constants.ROW_SIZE;
+                rowIndex++;
+            } else {
+                pageBuffer.put((byte) 0x00); // Pad remaining space with zeros
+            }
         }
 
-        return buffer.array();
+        return pageBuffer.array();
     }
 
     @Override
-    // Deserialize byte array into this Page, return true if successful
-    public boolean deserialize(byte[] data) {
-        if (data == null || data.length != Constants.PAGE_SIZE) {
+    public boolean deserialize(byte[] rawData) {
+        if (rawData == null || rawData.length != Constants.PAGE_SIZE) {
+            System.err.println("Deserialization failed: Invalid data length or null input");
             return false;
         }
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        
-        int rowCount = buffer.getInt();
-        
-        if (rowCount < 0 || rowCount > (Constants.PAGE_SIZE - 4) / Constants.ROW_SIZE) {
+
+        ByteBuffer dataBuffer = ByteBuffer.wrap(rawData);
+
+        int numEntries = dataBuffer.getInt();
+        if (numEntries < 0 || numEntries > Constants.MAX_ROWS) {
+            System.err.println("Invalid entry count: " + numEntries);
             return false;
         }
 
         rows.clear();
+        recordsCount = 0;
 
         try {
-            for (int i = 0; i < rowCount; i++) {
-                byte[] rowData = new byte[Constants.ROW_SIZE];
-                buffer.get(rowData);
-                rows.add(Row.deserialize(rowData));
+            for (int i = 0; i < numEntries; i++) {
+                byte[] rowBytes = new byte[Constants.ROW_SIZE];
+                dataBuffer.get(rowBytes);
+                rows.add(Row.deserialize(rowBytes));
+                recordsCount++;
             }
 
             return true;
-        } catch (Exception e) {
+        } catch (Exception ex) {
+            System.err.println("Failed to deserialize entries: " + ex.getMessage());
             rows.clear();
+            recordsCount = 0;
 
             return false;
         }
