@@ -104,7 +104,7 @@ public class LRUBufferManager extends BufferManager {
     }
 
     /**
-     * Sets pin count to one.
+     * Changes instance variables to be consistent with new page.
      */
     private void overwritePage(int oldPageId, int newPageId, boolean newPageIsEmpty) {
         int frameIndex = pageTable.get(oldPageId);
