@@ -88,6 +88,7 @@ public class BinaryPage implements Page {
 
         ByteBuffer dataBuffer = ByteBuffer.wrap(rawData);
 
+        //first 4 bytes
         int numEntries = dataBuffer.getInt();
         if (numEntries < 0 || numEntries > Constants.MAX_ROWS) {
             System.err.println("Invalid entry count: " + numEntries);
