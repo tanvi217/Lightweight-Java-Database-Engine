@@ -21,7 +21,7 @@
 6. **Build & Run**
     ```sh
     cd buffer-manager
-    ant
+    ant run
     ```
 
 7. To test the code, run `ant test`. Text files for the test output will be created in the `test` directory.
@@ -68,4 +68,4 @@ cs645-labs
 ## resources
 
 [Apache Ant Manual](https://ant.apache.org/manual/using.html)
-[Report](https://docs.google.com/document/d/1yRNIZFOOBZGDW5Cv4G_jT15FkewFEATbQRjvpLWB9GQ/edit?tab=t.0)
+[Report](https://docs.google.com/document/d/1yRNIZFOOBZGDW5Cv4G_jT15FkewFEATbQRjvpLWB9GQ/edit)
