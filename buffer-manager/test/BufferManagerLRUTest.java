@@ -13,6 +13,7 @@ public class BufferManagerLRUTest {
 
     @Test
     public void testCreatePage() {
+        //barbones test to make sure creation of a page works
         Page page = bufferManager.createPage();
         assertNotNull(page);
         assertEquals(0, page.getId());
@@ -20,6 +21,7 @@ public class BufferManagerLRUTest {
 
     @Test
     public void testGetPage() {
+        //checking a very basic get.
         Page page = bufferManager.createPage();
         Page retrievedPage = bufferManager.getPage(page.getId());
         assertNotNull(retrievedPage);

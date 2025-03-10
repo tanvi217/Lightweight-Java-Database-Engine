@@ -16,6 +16,7 @@ public class BufferManagerTest {
 
     public static BufferManager getNewBM(int bufferSize) {
         // CHANGE TO WHICHEVER IMPLEMENTATION YOU WANT TO TEST
+        //BufferManagerLRU was an older implementation, we kept the file this way in case we wanted to compare different implemenations.
         return new LRUBufferManager(bufferSize);
         // return new BufferManagerLRU(bufferSize, false);
     }
@@ -34,6 +35,7 @@ public class BufferManagerTest {
 
     @Test
     public void testCreatePage() throws IOException {
+        //makes sure we can create numerous pages and check the id of the final page.
         Page p = null;
         for (int i = 0; i < bufferSize; ++i) {
             p = bm.createPage();
@@ -44,6 +46,8 @@ public class BufferManagerTest {
 
     @Test
     public void testUnpinPage() throws IOException {
+        //make sure that we can unpin pages without breaking anything, throwing errors or anything of that nature.
+        //since we are always unpinning we should create all the pages without any errors happening.
         Page p = null;
         for (int i = 0; i < numPages; ++i) {
             p = bm.createPage();
@@ -54,6 +58,7 @@ public class BufferManagerTest {
     }
 
     private Row testRow(int pageId, int rowNumber, boolean correctSizes) {
+        //function used to generate a row for testing purposes.
         int movieIdBytes = correctSizes ? 9 : 4;
         int titleBytes = correctSizes ? 30 : 4;
         byte[] movieId = ByteBuffer.allocate(movieIdBytes).putInt(pageId).array();
@@ -62,6 +67,8 @@ public class BufferManagerTest {
     }
 
     private void populateBM() throws IOException {
+        //function used to populate the buffermanager.
+        //
         Page p = bm.createPage();
         for (int i = 0; i < numRows; ++i) {
             if (p.isFull()) {
@@ -78,6 +85,7 @@ public class BufferManagerTest {
         populateBM();
         System.out.println(bm);
         int[] getIds = {18, 3, 2, 0, 13, 12, 19, 1, 6}; // all must be less than numPages
+        //testing getting some arbitrary valid page Ids
         for (int i = 0; i < getIds.length; ++i) {
             Page p = bm.getPage(getIds[i]);
             assertNotNull(p);
@@ -109,6 +117,7 @@ public class BufferManagerTest {
     }
 
     public static String overfillBuffer() {
+        //checking to make sure if we overfill buffer WITHOUT unpinning we get an error as expected.
         int bufferSize = 3;
         int totalPages = 4;
         Page[] p = new Page[totalPages];
@@ -128,6 +137,7 @@ public class BufferManagerTest {
     }
 
     public static String evictPage() {
+        //testing that we can evict a page in a similar instance to above but now we unpin ONE page.
         int bufferSize = 3;
         int totalPages = 4;
         Page[] p = new Page[totalPages];
@@ -149,6 +159,7 @@ public class BufferManagerTest {
     }
 
     public static String lruLongerTest() {
+        //a longer sequence of tests similar to the above to really make sure that eviction and overfilling work as anticipated.
         int bufferSize = 4;
         int totalPages = 8;
         Page[] p = new Page[totalPages];

@@ -14,6 +14,7 @@ public class IMDbPageTest {
 
     @Before
     public void setUp() {
+        //setup for tests
         buffer = ByteBuffer.allocate(1000); // Large enough buffer for multiple smaller pages
         page = new IMDbPage(1, 0, pageBytes, buffer, true);
 
@@ -31,20 +32,23 @@ public class IMDbPageTest {
     // Test IMDbPage constructor and getId()
     @Test
     public void testConstructor() {
+        //tests that we properly set up a page object and can get the ID.
         assertEquals("Page ID should be 1", 1, page.getId());
     }
 
     // Test insertRow() and isFull()
     @Test
     public void testInsertRow() {
+        //this test is important to make sure we can insert rows, but here we are verifying that the index returned is correct
         assertEquals("First row should be inserted at index 0", 0, page.insertRow(mockRow1));
         assertEquals("Second row should be inserted at index 1", 1, page.insertRow(mockRow2));
 
         // Fill the page up to maxRows
         for (int i = 2; i < maxRows; i++) {
+            //here we make sure we can add rows all the way up until maxRows
             assertNotEquals("Rows should be inserted successfully", -1, page.insertRow(mockRow1));
         }
-
+        //here we make sure the page is full, which should be reflected in page.isFull() and .insertRow
         assertTrue("Page should be full", page.isFull());
         assertEquals("Inserting beyond capacity should return -1", -1, page.insertRow(mockRow2));
     }
@@ -52,6 +56,8 @@ public class IMDbPageTest {
     // Test retrieving inserted rows
     @Test
     public void testGetRow() {
+        //here we test that the rows we insert are actually getting their data saved within the object somehow and that data can be retrieved correctly
+
         page.insertRow(mockRow1);
         page.insertRow(mockRow2);
 
@@ -73,13 +79,19 @@ public class IMDbPageTest {
     // Test handling out-of-bounds row retrieval
     @Test
     public void testGetRowOutOfBounds() {
+        //Make sure that out of bounds indices throw exceptions, i.e. too high or low indexing.
         assertThrows("Negative index should throw exception", IllegalArgumentException.class, () -> page.getRow(-1));
-        assertThrows("Index beyond nextRowId should throw exception", IllegalArgumentException.class, () -> page.getRow(5));
+        assertThrows("Index beyond nextRowId should throw exception", IllegalArgumentException.class, () -> page.getRow(0));
+        page.insertRow(mockRow1);
+        assertThrows("Index beyond nextRowId should throw exception", IllegalArgumentException.class, () -> page.getRow(1));
+        //we also want to make sure this gives us problems at the tightest test cases and try after inserting a row as well.
     }
 
     // Test nextRowId consistency
     @Test
     public void testNextRowIdConsistency() {
+        //this has to do with how we are storing data in the buffer. We are using the last byte to store the nextRowId to make for
+        //efficient reading of pages from disk, this helps us loop over the proper number of rows when we pull out the data from disk.
         assertEquals("Initial nextRowId should be 0", 0, buffer.get(pageBytes - 1));
         page.insertRow(mockRow1);
         assertEquals("NextRowId should be updated to 1", 1, buffer.get(pageBytes - 1));
@@ -88,6 +100,7 @@ public class IMDbPageTest {
     // Test isFull() method
     @Test
     public void testIsFull() {
+        //another isFull test just to be sure.
         assertFalse("Page should not be full initially", page.isFull());
 
         for (int i = 0; i < maxRows; i++) {
