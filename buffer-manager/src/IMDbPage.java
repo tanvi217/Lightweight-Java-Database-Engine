@@ -34,9 +34,11 @@ public class IMDbPage implements Page {
         pageStart = frameIndex * pageBytes;
         lastByteIndex = pageStart + pageBytes - 1;
         rows = new Row[maxRows];
+
         if (isEmpty) {
             buffer.put(lastByteIndex, (byte) 0);
         }
+
         nextRowId = (int) buffer.get(lastByteIndex);
     }
 
@@ -45,9 +47,11 @@ public class IMDbPage implements Page {
         if (rowId < 0 || rowId >= nextRowId) {
             throw new IllegalArgumentException("Row index out of bounds.");
         }
+
         if (rows[rowId] != null) {
             return rows[rowId];
         }
+
         int rowStart = pageStart + rowId * rowBytes;
         byte[] movieId = new byte[9];
         byte[] title = new byte[30];
@@ -55,19 +59,8 @@ public class IMDbPage implements Page {
         buffer.get(movieId); // retrieve data from buffer
         buffer.get(title);
         rows[rowId] = new Row(movieId, title);
-        return rows[rowId];
-    }
 
-    private byte[] toSize(byte[] arr, int size) {
-        if (arr.length == size) {
-            return arr;
-        }
-        int contentSize = arr.length < size ? arr.length : size;
-        byte[] resized = new byte[size];
-        for (int i = 0; i < contentSize; ++i) {
-            resized[i] = arr[i];
-        }
-        return resized;
+        return rows[rowId];
     }
 
     @Override
@@ -107,4 +100,18 @@ public class IMDbPage implements Page {
         return info;
     }
 
+    private byte[] toSize(byte[] arr, int size) {
+        if (arr.length == size) {
+            return arr;
+        }
+
+        int contentSize = arr.length < size ? arr.length : size;
+        byte[] resized = new byte[size];
+
+        for (int i = 0; i < contentSize; ++i) {
+            resized[i] = arr[i];
+        }
+        
+        return resized;
+    }
 }
