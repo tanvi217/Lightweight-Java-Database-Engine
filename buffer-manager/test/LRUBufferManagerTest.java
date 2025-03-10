@@ -3,8 +3,6 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 
 public class LRUBufferManagerTest {
@@ -57,5 +55,15 @@ public class LRUBufferManagerTest {
     @Test(expected = IllegalArgumentException.class)
     public void testMarkPageDirtyWithInvalidPageId() {
         bufferManager.markDirty(1001);
+    }
+
+    // Test to check if exception is thrown when a page is created with full buffer and all pages are pinned
+    @Test(expected = IllegalStateException.class)
+    public void testAllPagesPinned() {
+        for (int i = 0; i < bufferSize; i++) {
+            bufferManager.createPage();
+        }
+
+        bufferManager.createPage();
     }
 }

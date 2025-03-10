@@ -3,7 +3,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Iterator;
 
 // Buffer manager that uses a Least Recently Used (LRU) policy for page replacement

@@ -2,7 +2,7 @@ import java.nio.ByteBuffer;
 
 public class IMDbPage implements Page {
 
-    private static int rowBytes = 39;
+    private static int rowBytes = Constants.ROW_SIZE;
     private int pageId;
     private ByteBuffer buffer;
     private int maxRows;
@@ -53,8 +53,8 @@ public class IMDbPage implements Page {
         }
 
         int rowStart = pageStart + rowId * rowBytes;
-        byte[] movieId = new byte[9];
-        byte[] title = new byte[30];
+        byte[] movieId = new byte[Constants.MOVIE_ID_SIZE];
+        byte[] title = new byte[Constants.TITLE_SIZE];
         buffer.position(rowStart);
         buffer.get(movieId); // retrieve data from buffer
         buffer.get(title);
@@ -100,6 +100,11 @@ public class IMDbPage implements Page {
         return info;
     }
 
+    /**
+     * If the passed byte array's length is less than the given size, a new array
+     * padded with zeros is returned. If the array is too long, it is trimmed to
+     * size.
+     */
     private byte[] toSize(byte[] arr, int size) {
         if (arr.length == size) {
             return arr;
@@ -111,7 +116,7 @@ public class IMDbPage implements Page {
         for (int i = 0; i < contentSize; ++i) {
             resized[i] = arr[i];
         }
-        
+
         return resized;
     }
 }
