@@ -16,7 +16,7 @@ public class BufferManagerTest {
 
     public static BufferManager getNewBM(int bufferSize) {
         // CHANGE TO WHICHEVER IMPLEMENTATION YOU WANT TO TEST
-        //BufferManagerLRU was an older implementation, we kept the file this way in case we wanted to compare different implemenations.
+        //BufferManagerLRU was an older implementation, we kept the file this way in case we wanted to compare different implementations.
         return new LRUBufferManager(bufferSize);
         // return new BufferManagerLRU(bufferSize, false);
     }
@@ -67,8 +67,7 @@ public class BufferManagerTest {
     }
 
     private void populateBM() throws IOException {
-        //function used to populate the buffermanager.
-        //
+        // function used to populate the buffer manager.
         Page p = bm.createPage();
         for (int i = 0; i < numRows; ++i) {
             if (p.isFull()) {

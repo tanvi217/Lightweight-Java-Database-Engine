@@ -7,9 +7,18 @@ public class Row {
     public byte[] movieId;
     public byte[] title;
 
+    public Row(byte[] movieId, byte[] title, boolean padInputs) {
+        if (padInputs) {
+            this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
+            this.title = addPadding(title, Constants.TITLE_SIZE);
+        } else {
+            this.movieId = movieId;
+            this.title = title;
+        }
+    }
+
     public Row(byte[] movieId, byte[] title) {
-        this.movieId = movieId;
-        this.title = title;
+        this(movieId, title, false);
     }
 
     public String getMovieId(){
@@ -49,7 +58,7 @@ public class Row {
         byte[] movieId = extractBytes(buffer, Constants.MOVIE_ID_SIZE);
         byte[] title = extractBytes(buffer, Constants.TITLE_SIZE);
 
-        return new Row(movieId, title);
+        return new Row(movieId, title, true);
     }
 
     private static void validateDataLength(byte[] data) {
