@@ -3,11 +3,17 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNull;
+
 import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 
 public class LRUBufferManagerTest {
     private LRUBufferManager bufferManager;
-    private int bufferSize = 5;
+    private int bufferSize = 2;
     private String testFileName = "LRUBufferManagerTestFile.bin";
 
     @Before
@@ -18,7 +24,7 @@ public class LRUBufferManagerTest {
     @After
     public void tearDown() {
         File testFile = new File(testFileName);
-        
+
         if (testFile.exists()) {
             testFile.delete();
         }
@@ -65,5 +71,32 @@ public class LRUBufferManagerTest {
         }
 
         bufferManager.createPage();
+    }
+
+    // Checks if page is created and evicted based on LRU policy, file is created and has data
+    @Test
+    public void testCreateAndEvictPages() throws Exception {
+        Page p1 = bufferManager.createPage();
+        assertNotNull(p1);
+
+        Row insertedRow = new Row("tt0000001".getBytes(), "Movie 1".getBytes());
+        p1.insertRow(insertedRow);
+        bufferManager.markDirty(p1.getId());
+
+        Page p2 = bufferManager.createPage();
+        assertNotNull(p2);
+        p2.insertRow(new Row("tt0000002".getBytes(), "Movie 2".getBytes()));
+
+        bufferManager.unpinPage(p1.getId());
+
+        // file should be empty since no page is evicted yet
+        File file = new File(testFileName);
+        assertTrue(file.length() == 0);
+
+        Page p3 = bufferManager.createPage(); // since buffer pool is full, p1 should be evicted based on LRU
+        assertNotNull(p3);
+
+        // p1 should be evicted and written to file
+        assertTrue(file.length() > 0);
     }
 }
