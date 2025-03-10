@@ -4,11 +4,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
 public class BufferManagerLRUTest {
-    private BufferManagerLRU bufferManager;
+    private LRUBufferManager bufferManager;
 
     @Before
     public void setUp() {
-        bufferManager = new BufferManagerLRU(2, false);
+        bufferManager = new LRUBufferManager(2, false);
     }
 
     @Test

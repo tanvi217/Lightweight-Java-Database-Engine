@@ -54,7 +54,7 @@ public class IMDbPage implements Page {
         buffer.position(rowStart);
         buffer.get(movieId); // retrieve data from buffer
         buffer.get(title);
-        rows[rowId] = new OriginalRow(movieId, title);
+        rows[rowId] = new Row(movieId, title);
         return rows[rowId];
     }
 
@@ -78,8 +78,8 @@ public class IMDbPage implements Page {
         int rowId = nextRowId;
         int rowStart = pageStart + rowId * rowBytes;
         buffer.position(rowStart);
-        buffer.put(toSize(row.movieId, 9)); // write data to buffer
-        buffer.put(toSize(row.title, 30));
+        buffer.put(toSize(row.movieId, Constants.MOVIE_ID_SIZE)); // write data to buffer
+        buffer.put(toSize(row.title, Constants.TITLE_SIZE));
         rows[rowId] = row;
         ++nextRowId;
         buffer.put(lastByteIndex, (byte) nextRowId); // write new nextRowId to buffer
@@ -94,16 +94,6 @@ public class IMDbPage implements Page {
     @Override
     public int getId() {
         return pageId;
-    }
-
-    @Override
-    public byte[] serialize() {
-        throw new UnsupportedOperationException("Unimplemented method 'serialize'");
-    }
-
-    @Override
-    public boolean deserialize(byte[] data) {
-        throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
     }
 
     @Override

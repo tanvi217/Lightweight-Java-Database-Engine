@@ -3,14 +3,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class Row {
+
     public byte[] movieId;
     public byte[] title;
 
-    public Row() {}
-
     public Row(byte[] movieId, byte[] title) {
-        //this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
-        //this.title = addPadding(title, Constants.TITLE_SIZE);
         this.movieId = movieId;
         this.title = title;
     }
@@ -22,6 +19,8 @@ public class Row {
     public String getTitle(){
         return new String(this.title, StandardCharsets.UTF_8);
     }
+
+    // Functions below are used in BinaryPage
 
     private byte[] addPadding(byte[] input, int requiredLength) {
         byte[] result = new byte[requiredLength];
@@ -64,4 +63,5 @@ public class Row {
         buffer.get(bytes);
         return bytes;
     }
+
 }

@@ -51,7 +51,6 @@ public class BinaryPage implements Page {
     }
     
 
-    @Override
     public byte[] serialize() {
         ByteBuffer pageBuffer = ByteBuffer.allocate(Constants.PAGE_SIZE);
 
@@ -79,7 +78,6 @@ public class BinaryPage implements Page {
         return pageBuffer.array();
     }
 
-    @Override
     public boolean deserialize(byte[] rawData) {
         if (rawData == null || rawData.length != Constants.PAGE_SIZE) {
             System.err.println("Deserialization failed: Invalid data length or null input");
