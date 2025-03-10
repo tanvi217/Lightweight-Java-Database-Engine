@@ -66,7 +66,12 @@ public class LRUBufferManager extends BufferManager {
     public LRUBufferManager(int numFrames) {
         this(numFrames, 4, Constants.DATA_BIN_FILE, false);
     }
-
+    /* 
+    //Used for "special look into binary file" in the report.
+    public Page[] getCurrPages(){
+        return this.bufferPages;
+    }
+        */
     /**
      * Creates the binary file if it doesn’t exist yet.
      */

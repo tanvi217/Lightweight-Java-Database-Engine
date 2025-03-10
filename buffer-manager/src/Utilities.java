@@ -9,7 +9,7 @@ public class Utilities {
     public static void loadDataset(BufferManager bf, String filepath) {
         try (BufferedReader bufferReader = new BufferedReader(new FileReader(filepath))) {
             String curRow;
-            int rowsProcessed = 1;
+            int rowsProcessed = 0;
             int possibleBufferPoolSize = Constants.BUFFER_SIZE + 5;
             int rowsToFill = 9;
             int pagesCreated = 0;
@@ -160,6 +160,16 @@ public class Utilities {
             System.out.println(skippedMovies + " rows skipped due to long movieId.");
             System.out.println("Processed " + rowsProcessed + " rows, Created " + pagesCreated + " pages.");
             System.out.println("Finished loading dataset.");
+            /*
+            Page[] currentPages = (((LRUBufferManager) bf).getCurrPages());
+            
+            for (Page page : currentPages) {
+                System.out.println(page.getId());
+            }
+            System.out.println(currentPages[0].insertRow(new Row("123456789".getBytes(), "TITLE".getBytes())));
+            System.out.println(currentPages[1].insertRow(new Row("123456789".getBytes(), "TITLE".getBytes())));
+            System.out.println(currentPages[2].insertRow(new Row("123456789".getBytes(), "TITLE".getBytes())));
+            */
         } catch (Exception e) {
             e.printStackTrace();
         }
