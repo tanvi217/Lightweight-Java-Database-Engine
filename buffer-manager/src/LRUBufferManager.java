@@ -44,9 +44,11 @@ public class LRUBufferManager extends BufferManager {
         buffer = ByteBuffer.allocate(bufferSize * pageBytes);
         binFile = binaryFileName;
         pageTable = new LinkedHashMap<>(1 + (bufferSize * 4) / 3, 0.75f, false);
+
         for (int i = 1; i <= bufferSize; ++i) {
             pageTable.put(-i, i - 1);
         }
+
         bufferPages = new Page[bufferSize];
         isDirty = new boolean[bufferSize];
         pinCount = new int[bufferSize];
@@ -90,6 +92,7 @@ public class LRUBufferManager extends BufferManager {
         if (pageId < 0 || pageId >= nextPageId) {
             throw new IllegalArgumentException("Internal Read Error: Page ID out of bounds");
         }
+
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "r")) {
             raf.seek(pageId * pageBytes); // move to location of page on disk
             raf.read(buffer.array(), frameIndex * pageBytes, pageBytes); // read a full page of data into the buffer, starting at the location of the frame
@@ -105,8 +108,10 @@ public class LRUBufferManager extends BufferManager {
         if (pageId < 0 || !pageTable.containsKey(pageId)) {
             throw new IllegalArgumentException("Internal Write Error: Page with this ID is not in the buffer");
         }
+
         try (RandomAccessFile raf = new RandomAccessFile(binFile, "rw")) {
             int frameIndex = pageTable.get(pageId);
+
             raf.seek(pageId * pageBytes); // move to location of page on disk
             raf.write(buffer.array(), frameIndex * pageBytes, pageBytes);  // write a full page of data into the buffer, starting at the location of the frame
         } catch (IOException e) {
@@ -119,20 +124,24 @@ public class LRUBufferManager extends BufferManager {
      */
     private void overwritePage(int oldPageId, int newPageId, boolean newPageIsEmpty) {
         int frameIndex = pageTable.get(oldPageId);
+
         if (isDirty[frameIndex]) {
             writePageToDisk(oldPageId);
             if (debugPrinting) {
                 System.err.println("Wrote page " + oldPageId + " to disk");
             }
         }
+
         if (!newPageIsEmpty) {
             readPageFromDisk(newPageId, frameIndex);
         }
+
         pageTable.remove(oldPageId);
         pageTable.put(newPageId, frameIndex);
         bufferPages[frameIndex] = getPageObject(newPageId, frameIndex, newPageIsEmpty);
         isDirty[frameIndex] = newPageIsEmpty; // newly created page is marked dirty
         pinCount[frameIndex] = 1;
+
         if (debugPrinting) {
             System.out.println("Added page " + newPageId + " to frame " + frameIndex);
         }
@@ -144,13 +153,16 @@ public class LRUBufferManager extends BufferManager {
      */
     private int pageIdOfLRUPage() {
         Iterator<Integer> lruPageIds = pageTable.keySet().iterator();
+
         while (lruPageIds.hasNext()) {
             int pageId = lruPageIds.next();
             int frameIndex = pageTable.get(pageId);
+
             if (pinCount[frameIndex] == 0) {
                 if (debugPrinting) {
                     System.out.println("Found least recently used page " + pageId);
                 }
+
                 return pageId;
             }
         }
@@ -163,22 +175,28 @@ public class LRUBufferManager extends BufferManager {
             System.out.println("Invalid page id, requested id: " + pageId + " highest id is: " + (nextPageId - 1));
             throw new IllegalArgumentException("Error Getting Page " + pageId + ": ID is out of bounds");
         }
+
         if (pageTable.containsKey(pageId)) {
             int frameIndex = pageTable.get(pageId);
             pageTable.remove(pageId); // remove so that insertion resets pageId's position in pageTable.keySet()
             pageTable.put(pageId, frameIndex);
             pinCount[frameIndex] += 1;
+
             if (debugPrinting) {
                 System.out.println("Cache hit: Page " + pageId);
             }
+
             return bufferPages[frameIndex];
         }
+
         int lruPageId = pageIdOfLRUPage();
         int frameIndex = pageTable.get(lruPageId);
         overwritePage(lruPageId, pageId, false); // sets pin count to 1
+
         if (debugPrinting) {
             System.out.println("Cache miss: Loaded Page " + pageId + " from disk");
         }
+
         return bufferPages[frameIndex];
     }
 
@@ -186,8 +204,10 @@ public class LRUBufferManager extends BufferManager {
     public Page createPage() {
         int lruPageId = pageIdOfLRUPage();
         int frameIndex = pageTable.get(lruPageId);
+
         overwritePage(lruPageId, nextPageId, true); // marks new page dirty, and sets pin count to 1
         nextPageId += 1;
+
         return bufferPages[frameIndex];
     }
 
@@ -196,8 +216,10 @@ public class LRUBufferManager extends BufferManager {
         if (pageId < 0 || !pageTable.containsKey(pageId)) {
             throw new IllegalArgumentException("Error Marking Page " + pageId + " Dirty: No page with this ID is in the buffer.");
         }
+
         int frameIndex = pageTable.get(pageId);
         isDirty[frameIndex] = true;
+
         if (debugPrinting) {
             System.out.println("Marked page " + pageId + " as dirty");
         }
@@ -208,10 +230,13 @@ public class LRUBufferManager extends BufferManager {
         if (pageId < 0 || !pageTable.containsKey(pageId)) {
             throw new IllegalArgumentException("Error Unpinning Page " + pageId + ": No page with this ID is in the buffer.");
         }
+
         int frameIndex = pageTable.get(pageId);
+
         if (pinCount[frameIndex] == 0) {
             throw new IllegalStateException("Error Unpinning Page " + pageId + ": Cannot unpin page with no pins.");
         }
+
         pinCount[frameIndex] -= 1;
     }
 
@@ -225,19 +250,24 @@ public class LRUBufferManager extends BufferManager {
         String info = String.format("BUFFER  pages: %d  frames: %d  full-length: %d bytes", nextPageId, pageTable.keySet().size(), buffer.capacity());
         StringBuilder sb = new StringBuilder(info);
         int i = 0;
+
         while (i < bufferSize) {
             sb.append("\n");
+
             for (int j = 0; j < rowSize && i < bufferSize; ++j) {
                 Page p = bufferPages[i];
                 sb.append(" ");
+                
                 if (p != null) {
                     sb.append(String.format("%0" + idSize + "d", p.getId()));
                 } else {
                     sb.append("-".repeat(idSize));
                 }
+
                 ++i;
             }
         }
+
         return sb.toString();
     }
 
