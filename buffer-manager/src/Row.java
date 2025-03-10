@@ -9,8 +9,10 @@ public class Row {
     public Row() {}
 
     public Row(byte[] movieId, byte[] title) {
-        this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
-        this.title = addPadding(title, Constants.TITLE_SIZE);
+        //this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
+        //this.title = addPadding(title, Constants.TITLE_SIZE);
+        this.movieId = movieId;
+        this.title = title;
     }
 
     public String getMovieId(){
