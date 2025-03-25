@@ -1,54 +1,27 @@
 # buffer-manager
 
-### Steps to Set Up the Repository
+TODO make note of new changes
 
-1. **Clone the Repository**
-   ```sh
-   git clone https://github.com/06tron/cs645-labs.git
-   cd cs645-labs
-   ```
-2. Download the JUnit 4.13.2 and Hamcrest Core 1.3 JAR files and place them in the `lib` subdirectory of `cs645-labs`:
-   - [junit-4.13.2.jar](https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar)
-   - [hamcrest-core-1.3.jar](https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar)
+## Lab 1 Submission
 
-3. Download the IMDb TSV file and place it into the `data` directory:
-   - [title.basics.tsv](https://datasets.imdbws.com/title.basics.tsv.gz)
-
-4. Prerequisites
-   - Java Development Kit (JDK)
-   - Apache Ant
-  
-6. **Build & Run**
-    ```sh
-    cd buffer-manager
-    ant run
-    ```
-
-7. To test the code, run `ant test`. Text files for the test output will be created in the `test` directory.
-
-### Directory Structure
-
-The directory structure of the project, at the time of Lab-1 submission was as follows:
-
+1. [Written Report](https://docs.google.com/document/d/1yRNIZFOOBZGDW5Cv4G_jT15FkewFEATbQRjvpLWB9GQ/edit)
+2. To run the code submitted on March 9th, start by cloning the repository. Switch to the commit specified below as changes have been made since submission.
+```sh
+git clone https://github.com/06tron/cs645-labs.git
+cd cs645-labs
+git checkout febbee43c6dc42044b91f8c67e34f5b84e88f24c
+mkdir lib buffer-manager/data
 ```
-cs645-labs
-├── lib
-│   ├── hamcrest-core-1.3.jar
-│   └── junit-4.13.2.jar
-├── data 
-│   └── title.basics.tsv
-└── buffer-manager
-    ├── src
-    │   ├── BufferManager.java
-    │   ├── Page.java
-    │   └── ...
-    ├── test
-    │   ├── TEST-BufferManagerTest.txt
-    │   ├── BufferManagerTest.java
-    │   └── ...
-    └── build.xml
+3. Move the IMDb TSV file into the `buffer-manager/data` subdirectory of `cs645-labs`. Do the same for JUnit 4.13.2 and Hamcrest Core 1.3, placing them into the `lib` subdirectory.
+```sh
+mkdir buffer-manager/data lib
+curl --output-dir buffer-manager/data -O https://datasets.imdbws.com/title.basics.tsv.gz
+curl --output-dir lib -O https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar
+curl --output-dir lib -O https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar
 ```
-
-## report
-
-[Report](https://docs.google.com/document/d/1yRNIZFOOBZGDW5Cv4G_jT15FkewFEATbQRjvpLWB9GQ/edit)
+4. Build and run the code using Apache Ant 1.10.15 and Java. After running the test command, text files containing the output will be created in the `test` directory.
+```sh
+cd buffer-manager
+ant test
+ant run
+```
