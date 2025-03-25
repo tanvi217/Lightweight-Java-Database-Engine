@@ -16,7 +16,7 @@
     </target>
 
     <target name="run" depends="compile">
-        <java classname="Main" classpath="${build-dir}" />
+        <java classname="Utilities" classpath="${build-dir}" />
     </target>
 
     <target name="compile-test" depends="init">

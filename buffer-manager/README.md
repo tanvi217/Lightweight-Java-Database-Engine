@@ -10,7 +10,6 @@ TODO make note of new changes
 git clone https://github.com/06tron/cs645-labs.git
 cd cs645-labs
 git checkout febbee43c6dc42044b91f8c67e34f5b84e88f24c
-mkdir lib buffer-manager/data
 ```
 3. Move the IMDb TSV file into the `buffer-manager/data` subdirectory of `cs645-labs`. Do the same for JUnit 4.13.2 and Hamcrest Core 1.3, placing them into the `lib` subdirectory.
 ```sh
@@ -25,3 +24,4 @@ cd buffer-manager
 ant test
 ant run
 ```
+Note that these instructions can be used to run newer versions of the code if the `data` directory path is changed from `cs645-labs/buffer-manager/data` to `cs645-labs/data`.
