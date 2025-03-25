@@ -1,4 +1,4 @@
-# cs645-labs
+# buffer-manager
 
 ### Steps to Set Up the Repository
 
@@ -28,7 +28,7 @@
 
 ### Directory Structure
 
-The directory structure of the project is as follows:
+The directory structure of the project, at the time of Lab-1 submission was as follows:
 
 ```
 cs645-labs
@@ -49,22 +49,6 @@ cs645-labs
     └── build.xml
 ```
 
-### group members
-- Priyanka Gupta (priyankagpta)
-- Evan Ciccarelli (eciccarelli0016)
-- Tanvi Agarwal (tanviagarwal15)
-- Matthew Richardson (06tron)
+## report
 
-### teaching and course assistants
-- Sandeep Polisetty (sandeep06011991)
-- Hasnain Heickal (hheickal)
-- Alex Zheng (alex-haozheng)
-- Harshini Bharanidharan (hbharanidhar)
-- Meghana Krishnan (meghanakrish19)
-- Dhruv Maheshwari (dhruvm2509)
-- Rachna Ajit Soundatti (rachnasoundatti)
-
-## resources
-
-[Apache Ant Manual](https://ant.apache.org/manual/using.html)
 [Report](https://docs.google.com/document/d/1yRNIZFOOBZGDW5Cv4G_jT15FkewFEATbQRjvpLWB9GQ/edit)
