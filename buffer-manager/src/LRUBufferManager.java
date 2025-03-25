@@ -65,12 +65,7 @@ public class LRUBufferManager extends BufferManager {
     public LRUBufferManager(int numFrames) {
         this(numFrames, 4, Constants.DATA_BIN_FILE, false);
     }
-    /* 
-    //Used for "special look into binary file" in the report.
-    public Page[] getCurrPages(){
-        return this.bufferPages;
-    }
-        */
+
     /**
      * Creates the binary file if it doesn’t exist yet.
      */
@@ -86,7 +81,11 @@ public class LRUBufferManager extends BufferManager {
      * Creates a new Page. The implementation could be changed to use a different Page class.
      */
     private Page getPageObject(int pageId, int frameIndex, boolean isEmpty) {
-        return new IMDbPage(pageId, frameIndex, pageBytes, buffer, isEmpty);
+        int pageStart = frameIndex * pageBytes;
+        if (isEmpty) {
+            return new TabularPage(pageId, pageStart, pageBytes, buffer, Constants.ROW_SIZE);
+        }
+        return new TabularPage(pageId, pageStart, pageBytes, buffer);
     }
 
     /**
