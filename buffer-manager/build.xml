@@ -48,5 +48,8 @@
 
     <target name="clean">
         <delete dir="${build-dir}" />
+        <delete>
+            <fileset dir="${test-dir}" includes="TEST-*"/>
+        </delete>
     </target>
 </project>
