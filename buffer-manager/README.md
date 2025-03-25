@@ -11,7 +11,7 @@
    - [junit-4.13.2.jar](https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar)
    - [hamcrest-core-1.3.jar](https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar)
 
-3. Download the IMDb TSV file and place it into the `buffer-manager/data` directory:
+3. Download the IMDb TSV file and place it into the `data` directory:
    - [title.basics.tsv](https://datasets.imdbws.com/title.basics.tsv.gz)
 
 4. Prerequisites
@@ -35,6 +35,8 @@ cs645-labs
 ├── lib
 │   ├── hamcrest-core-1.3.jar
 │   └── junit-4.13.2.jar
+├── data 
+│   └── title.basics.tsv
 └── buffer-manager
     ├── src
     │   ├── BufferManager.java
@@ -44,10 +46,7 @@ cs645-labs
     │   ├── TEST-BufferManagerTest.txt
     │   ├── BufferManagerTest.java
     │   └── ...
-    ├── data 
-    │   └── title.basics.tsv
     └── build.xml
-
 ```
 
 ### group members
