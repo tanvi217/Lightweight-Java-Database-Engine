@@ -1,17 +1,19 @@
 import java.nio.ByteBuffer;
 
-public class IMDbPage implements Page {
+public class TabularPage implements Page {
 
-    private static int rowBytes = Constants.ROW_SIZE;
+    private static final int METADATA_INTS = 2;
     private int pageId;
+    private int rowLength;
     private ByteBuffer buffer;
     private int maxRows;
     private int pageStart; // index of first byte of this page in buffer
-    private int lastByteIndex;
+    private int nextRowIdLocation;
+    private int rowLengthLocation;
     private Row[] rows;
     private int nextRowId; // equal to the number of full rows in this page
 
-    /**
+    /*
      * IMDbPage writes directly to the buffer stored in LRUBufferManager. This isn't
      * inefficient, because we don't write to disk at all. The number of bytes
      * available to store rows in given by pageBytes - 1, where we subtract one to
@@ -27,19 +29,48 @@ public class IMDbPage implements Page {
      *                   the same buffer manager.
      * @param buffer     A reference to the buffer initialized in LRUBufferManager.
      */
-    public IMDbPage(int pageId, int frameIndex, int pageBytes, ByteBuffer buffer, boolean isEmpty) {
+
+    /**
+     * For retrieving pages
+     * @param pageId
+     * @param frameIndex
+     * @param pageStart
+     * @param pageLength
+     * @param buffer
+     */
+    public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer) {
         this.pageId = pageId;
         this.buffer = buffer;
-        maxRows = (pageBytes - 1) / rowBytes;
-        pageStart = frameIndex * pageBytes;
-        lastByteIndex = pageStart + pageBytes - 1;
+        this.pageStart = pageStart;
+        rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
+        nextRowIdLocation = rowLengthLocation + 4; // one int over
+        rowLength = buffer.getInt(rowLengthLocation);
+        nextRowId = buffer.getInt(nextRowIdLocation);
+        maxRows = (pageLength - METADATA_INTS * 4) / rowLength;
         rows = new Row[maxRows];
+    }
 
-        if (isEmpty) {
-            buffer.put(lastByteIndex, (byte) 0);
-        }
-
-        nextRowId = (int) buffer.get(lastByteIndex);
+    /**
+     * for new pages
+     * @param pageId
+     * @param frameIndex
+     * @param pageStart
+     * @param pageLength
+     * @param buffer
+     * @param rowLength
+     */
+    public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer, int rowLength) {
+        this.pageId = pageId;
+        this.buffer = buffer;
+        this.pageStart = pageStart;
+        rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
+        nextRowIdLocation = rowLengthLocation + 4; // one int over
+        buffer.putInt(rowLengthLocation, rowLength);
+        buffer.putInt(nextRowIdLocation, 0);
+        this.rowLength = rowLength;
+        nextRowId = 0;
+        maxRows = (pageLength - METADATA_INTS * 4) / rowLength;
+        rows = new Row[maxRows];
     }
 
     @Override
@@ -52,13 +83,11 @@ public class IMDbPage implements Page {
             return rows[rowId];
         }
 
-        int rowStart = pageStart + rowId * rowBytes;
-        byte[] movieId = new byte[Constants.MOVIE_ID_SIZE];
-        byte[] title = new byte[Constants.TITLE_SIZE];
+        int rowStart = pageStart + rowId * rowLength;
+        byte[] data = new byte[rowLength];
         buffer.position(rowStart);
-        buffer.get(movieId); // retrieve data from buffer
-        buffer.get(title);
-        rows[rowId] = new Row(movieId, title);
+        buffer.get(data); // retrieve data from buffer
+        rows[rowId] = new Row(data);
 
         return rows[rowId];
     }
@@ -69,13 +98,12 @@ public class IMDbPage implements Page {
             return -1;
         }
         int rowId = nextRowId;
-        int rowStart = pageStart + rowId * rowBytes;
+        int rowStart = pageStart + rowId * rowLength;
         buffer.position(rowStart);
-        buffer.put(toSize(row.movieId, Constants.MOVIE_ID_SIZE)); // write data to buffer
-        buffer.put(toSize(row.title, Constants.TITLE_SIZE));
+        buffer.put(toSize(row.data, rowLength)); // write data to buffer
         rows[rowId] = row;
         ++nextRowId;
-        buffer.put(lastByteIndex, (byte) nextRowId); // write new nextRowId to buffer
+        buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
         return rowId;
     }
 
@@ -91,10 +119,10 @@ public class IMDbPage implements Page {
 
     @Override
     public String toString() {
-        int pageBytes = lastByteIndex + 1 - pageStart;
+        int pageBytes = rowLengthLocation + METADATA_INTS * 4 - pageStart;
         int firstInt = buffer.getInt(pageStart);
         String info = String.format("PAGE  id: %02d  rows: %03d  start-index: %04d  full-length: %d bytes  first-int: %d", pageId, nextRowId, pageStart, pageBytes, firstInt);
-        if (nextRowId != buffer.get(lastByteIndex)) {
+        if (nextRowId != buffer.getInt(nextRowIdLocation)) {
             return "INCONSISTENT " + info;
         }
         return info;

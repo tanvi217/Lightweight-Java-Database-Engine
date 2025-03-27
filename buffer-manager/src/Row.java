@@ -1,76 +1,28 @@
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
 public class Row {
 
-    public byte[] movieId;
-    public byte[] title;
+    public byte[] data;
 
-    public Row(byte[] movieId, byte[] title, boolean padInputs) {
-        if (padInputs) {
-            this.movieId = addPadding(movieId, Constants.MOVIE_ID_SIZE);
-            this.title = addPadding(title, Constants.TITLE_SIZE);
+    public Row(byte[]... columns) {
+        if (columns.length == 1) {
+            data = columns[0];
         } else {
-            this.movieId = movieId;
-            this.title = title;
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            try {
+                for (byte[] col : columns) {
+                    stream.write(col);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            data = stream.toByteArray();
         }
     }
 
-    public Row(byte[] movieId, byte[] title) {
-        this(movieId, title, false);
-    }
-
-    public String getMovieId(){
-        return new String(this.movieId, StandardCharsets.UTF_8);
-    }
-
-    public String getTitle(){
-        return new String(this.title, StandardCharsets.UTF_8);
-    }
-
-    // Functions below are used in BinaryPage
-
-    private byte[] addPadding(byte[] input, int requiredLength) {
-        byte[] result = new byte[requiredLength];
-        int lengthToCopy = Math.min(input.length, requiredLength);
-        System.arraycopy(input, 0, result, 0, lengthToCopy);
-
-        if (input.length < requiredLength) {
-            Arrays.fill(result, input.length, requiredLength, (byte) 0);
-        }
-    
-        return result;
-    }
-
-    public byte[] serialize() {
-        ByteBuffer buffer = ByteBuffer.allocate(Constants.ROW_SIZE);
-
-        buffer.put(movieId);
-        buffer.put(title);
-
-        return buffer.array();
-    }
-
-    public static Row deserialize(byte[] data) {
-        validateDataLength(data);
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        byte[] movieId = extractBytes(buffer, Constants.MOVIE_ID_SIZE);
-        byte[] title = extractBytes(buffer, Constants.TITLE_SIZE);
-
-        return new Row(movieId, title, true);
-    }
-
-    private static void validateDataLength(byte[] data) {
-        if (data.length != Constants.ROW_SIZE) {
-            throw new IllegalArgumentException("Row data must be exactly 39 bytes");
-        }
-    }
-
-    private static byte[] extractBytes(ByteBuffer buffer, int size) {
-        byte[] bytes = new byte[size];
-        buffer.get(bytes);
-        return bytes;
+    @Override
+    public String toString() {
+        return new String(data, StandardCharsets.UTF_8);
     }
 
 }

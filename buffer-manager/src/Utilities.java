@@ -4,6 +4,12 @@ import java.util.Random;
 
 public class Utilities {
 
+    public static void main(String[] args) {
+        //experimented with different buffer sizes by changing Constants.BUFFER_SIZE
+        BufferManager bufferManager = new LRUBufferManager(Constants.BUFFER_SIZE);
+        loadDataset(bufferManager, Constants.IMDB_FILE_PATH);
+    }
+
     // Loads the buffer manager with the imdb dataset
     // Interleaves row insertion with createPage and getPage methods
     public static void loadDataset(BufferManager bf, String filepath) {

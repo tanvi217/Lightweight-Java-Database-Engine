@@ -29,7 +29,11 @@ public abstract class BufferManager {
      * @return The Page object whose content is stored in a frame of the buffer
      * pool manager.
      */
-    abstract Page getPage(int pageId);
+    abstract Page getPage(int pageId, int fileIndex);
+
+    public Page getPage(int pageId) {
+        return getPage(pageId, 0);
+    }
 
     /**
      * Creates a new page. The page is immediately pinned.
@@ -43,7 +47,11 @@ public abstract class BufferManager {
      * @return The Page object whose content is stored in a frame of the buffer
      * pool manager.
      */
-    abstract Page createPage();
+    abstract Page createPage(int fileIndex);
+
+    public Page createPage() {
+        return createPage(0);
+    }
 
     /**
      * Marks a page as dirty, indicating it needs to be written to disk before

@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 
 public class IMDbPageTest {
 
-    private IMDbPage page;
+    private TabularPage page;
     private ByteBuffer buffer;
     private final int pageBytes = 400; // Example page size, want to try something different than usual 4096
     private final int maxRows = (pageBytes - 1) / 39;
@@ -16,7 +16,8 @@ public class IMDbPageTest {
     public void setUp() {
         //setup for tests
         buffer = ByteBuffer.allocate(1000); // Large enough buffer for multiple smaller pages
-        page = new IMDbPage(1, 0, pageBytes, buffer, true);
+        int rowLength = Constants.MOVIE_ID_SIZE + Constants.TITLE_SIZE;
+        page = new TabularPage(1, 0, pageBytes, buffer, rowLength);
 
         // Initialize mock rows with valid movieId and title
         byte[] movieId1 = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}; // 9-byte movieId
@@ -64,11 +65,9 @@ public class IMDbPageTest {
         Row retrievedRow1 = page.getRow(0);
         Row retrievedRow2 = page.getRow(1);
 
-        assertEquals("Retrieved movieId should match mockRow1", mockRow1.getMovieId(), retrievedRow1.getMovieId());
-        assertEquals("Retrieved title should match mockRow1", mockRow1.getTitle(), retrievedRow1.getTitle());
+        assertEquals("Retrieved movieId should match mockRow1", mockRow1.toString(), retrievedRow1.toString());
 
-        assertEquals("Retrieved movieId should match mockRow2", mockRow2.getMovieId(), retrievedRow2.getMovieId());
-        assertEquals("Retrieved title should match mockRow2", mockRow2.getTitle(), retrievedRow2.getTitle());
+        assertEquals("Retrieved movieId should match mockRow2", mockRow2.toString(), retrievedRow2.toString());
 
         assertEquals("Row objects themselves should be equal", mockRow1, retrievedRow1);
         assertEquals("Row objects themselves should be equal", mockRow2, retrievedRow2);

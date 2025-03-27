@@ -51,14 +51,13 @@ public class BufferManagerLRUTest {
         Page page = bm.getPage(0);
         Row currRow = page.getRow(0);
         System.out.println("HERE");
-        System.out.println(currRow.getMovieId());
-        System.out.println(currRow.getTitle());
+        System.out.println(currRow);
         
         byte[] id = "tt0000001".getBytes();
         byte[] title = "Carmencita".getBytes();
         Row r = new Row(id, title);
         page.insertRow(r);
-        System.out.println(page.getRow(1).getTitle());
+        System.out.println(page.getRow(1));
         bm.markDirty(0);
         bm.unpinPage(0);
         bm.createPage();
