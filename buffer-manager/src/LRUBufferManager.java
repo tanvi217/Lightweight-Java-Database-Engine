@@ -117,7 +117,7 @@ public class LRUBufferManager extends BufferManager {
             throw new IllegalArgumentException("Internal Write Error: Page with this ID is not in the buffer");
         }
         int frameIndex = pageTable.get(pageId);
-        try (RandomAccessFile raf = new RandomAccessFile(binFiles[frameIndex], "rw")) {
+        try (RandomAccessFile raf = new RandomAccessFile(binFiles[fileToWrite[frameIndex]], "rw")) {
             raf.seek(pageId * pageBytes); // move to location of page on disk
             raf.write(buffer.array(), frameIndex * pageBytes, pageBytes);  // write a full page of data into the buffer, starting at the location of the frame
         } catch (IOException e) {
@@ -259,7 +259,7 @@ public class LRUBufferManager extends BufferManager {
         int[] numColumns = { 8, 8, 8, 6, 4, 4, 3, 3 };
         int rowSize = d > 7 ? 2 : numColumns[d];
         int idSize = d > 7 ? 11 : numDigits[d];
-        String info = String.format("BUFFER  pages: %d  frames: %d  full-length: %d bytes", nextPageId, pageTable.keySet().size(), buffer.capacity());
+        String info = String.format("BUFFER  pages: %d  frames: %d  full-length: %d bytes", totalNextPageIDs, pageTable.keySet().size(), buffer.capacity());
         StringBuilder sb = new StringBuilder(info);
         int i = 0;
 

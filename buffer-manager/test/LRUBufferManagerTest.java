@@ -14,7 +14,7 @@ public class LRUBufferManagerTest {
 
     @Before
     public void setUp() {
-        bufferManager = new LRUBufferManager(bufferSize, 4, testFileName, false);
+        bufferManager = new LRUBufferManager(bufferSize, 4, new String[]{ testFileName }, false);
     }
 
     @After

@@ -6,33 +6,24 @@ import java.nio.charset.StandardCharsets;
 public class RowUnitTest {
 
     private Row row;
-    private byte[] movieId;
-    private byte[] title;
+    private byte[] data;
 
     @Before
     public void setUp() {
-        movieId = "123456789".getBytes(StandardCharsets.UTF_8);
-        title = "Example Movie".getBytes(StandardCharsets.UTF_8);
-        row = new Row(movieId, title);
+        data = "123456789Example Movie".getBytes(StandardCharsets.UTF_8);
+        row = new Row(data);
     }
 
     @Test
     public void testConstructor() {
         //tests that constructor properly saves values.
-        assertArrayEquals("MovieId should be correctly initialized", movieId, row.movieId);
-        assertArrayEquals("Title should be correctly initialized", title, row.title);
+        assertArrayEquals("Row data should be correctly initialized", data, row.data);
     }
 
     @Test
-    public void testGetMovieId() {
+    public void testGetData() {
         //tests that get movieId returns proper string.
-        assertEquals("MovieId should be correctly retrieved", "123456789", row.getMovieId());
-    }
-
-    @Test
-    public void testGetTitle() {
-        //tests that getTitle returns proper string
-        assertEquals("Title should be correctly retrieved", "Example Movie", row.getTitle());
+        assertEquals("Full row data should be correctly retrieved", "123456789Example Movie", row.toString());
     }
 
 }

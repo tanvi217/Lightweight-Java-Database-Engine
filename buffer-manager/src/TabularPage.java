@@ -41,6 +41,7 @@ public class TabularPage implements Page {
     public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer) {
         this.pageId = pageId;
         this.buffer = buffer;
+        this.pageStart = pageStart;
         rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
         nextRowIdLocation = rowLengthLocation + 4; // one int over
         rowLength = buffer.getInt(rowLengthLocation);
@@ -61,6 +62,7 @@ public class TabularPage implements Page {
     public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer, int rowLength) {
         this.pageId = pageId;
         this.buffer = buffer;
+        this.pageStart = pageStart;
         rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
         nextRowIdLocation = rowLengthLocation + 4; // one int over
         buffer.putInt(rowLengthLocation, rowLength);

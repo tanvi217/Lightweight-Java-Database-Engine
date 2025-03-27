@@ -31,6 +31,10 @@ public abstract class BufferManager {
      */
     abstract Page getPage(int pageId, int fileIndex);
 
+    public Page getPage(int pageId) {
+        return getPage(pageId, 0);
+    }
+
     /**
      * Creates a new page. The page is immediately pinned.
      *
@@ -44,6 +48,10 @@ public abstract class BufferManager {
      * pool manager.
      */
     abstract Page createPage(int fileIndex);
+
+    public Page createPage() {
+        return createPage(0);
+    }
 
     /**
      * Marks a page as dirty, indicating it needs to be written to disk before

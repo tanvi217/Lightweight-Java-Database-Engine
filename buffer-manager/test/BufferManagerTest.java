@@ -17,7 +17,7 @@ public class BufferManagerTest {
     public static BufferManager getNewBM(int bufferSize) {
         // CHANGE TO WHICHEVER IMPLEMENTATION YOU WANT TO TEST
         //BufferManagerLRU was an older implementation, we kept the file this way in case we wanted to compare different implementations.
-        return new LRUBufferManager(bufferSize);
+        return new LRUBufferManager(bufferSize, true);
         // return new BufferManagerLRU(bufferSize, false);
     }
 
@@ -25,7 +25,7 @@ public class BufferManagerTest {
     private static int bufferSize = 8;
     private static int numPages = (bufferSize * 5) / 2;
     private static int pageBytes = 4096;
-    private static int rowsPerPage = (pageBytes - 1) / 39;
+    private static int rowsPerPage = (pageBytes - 8) / Constants.ROW_SIZE;
     private static int numRows = rowsPerPage * numPages;
 
     @Before
@@ -90,7 +90,7 @@ public class BufferManagerTest {
             assertNotNull(p);
             assertEquals(getIds[i], p.getId());
             Row first = p.getRow(0);
-            int recoveredPageId = ByteBuffer.wrap(first.movieId).getInt();
+            int recoveredPageId = ByteBuffer.wrap(first.data).getInt();
             assertEquals(getIds[i], recoveredPageId);
             bm.unpinPage(p.getId());
         }
