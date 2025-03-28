@@ -34,9 +34,10 @@ public class LRUBufferManager extends BufferManager {
      * frame index. Because the default values for Page, boolean, and int are null,
      * false, and 0, these placeholder Pages are null, not dirty, and unpinned.
      * 
-     * @param numPagesInBuffer The number of frames, passed into the BufferManager constructor. Same as bufferSize.
-     * @param pageKB Number of kibibytes in a page.
-     * @param debugPrinting Relative path to binary file.
+     * @param numPagesInBuffer The number of frames, passed into the BufferManager
+     *                         constructor. Same as bufferSize.
+     * @param pageKB           Number of kibibytes in a page.
+     * @param debugPrinting    Relative path to binary file.
      */
     public LRUBufferManager(int numPagesInBuffer, int pageKB, boolean debugPrinting) {
         super(numPagesInBuffer);
@@ -57,20 +58,19 @@ public class LRUBufferManager extends BufferManager {
         this.debugPrinting = debugPrinting;
     }
 
-    public LRUBufferManager(boolean debugPrinting) {
-        this(Constants.BUFFER_SIZE, Constants.PAGE_KB, debugPrinting);
-    }
-
-    public LRUBufferManager() {
-        this(Constants.BUFFER_SIZE, Constants.PAGE_KB, false);
-    }
+    public LRUBufferManager(int numPagesInBuffer, boolean debugPrinting) { this(numPagesInBuffer, Constants.PAGE_KB, debugPrinting); }
+    public LRUBufferManager(int numPagesInBuffer) { this(Constants.BUFFER_SIZE, Constants.PAGE_KB, false); }
+    public LRUBufferManager(boolean debugPrinting) { this(Constants.BUFFER_SIZE, Constants.PAGE_KB, debugPrinting); }
+    public LRUBufferManager() { this(Constants.BUFFER_SIZE, Constants.PAGE_KB, false); }
 
     private String pathToFile(String filename) {
         return Constants.DATA_DIRECTORY + filename + ".bin";
     }
 
     /**
-     * The function createNewFile() creates a file from the File object, unless it exists already. If 'filename.bin' is in the data directory already, then nothing changes.
+     * The function createNewFile() creates a file from the File object, unless it
+     * exists already. If 'filename.bin' is in the data directory already, then
+     * nothing changes.
      * 
      * @param filename The name of the file to be initialized.
      */

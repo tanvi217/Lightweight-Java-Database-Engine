@@ -2,9 +2,9 @@ import java.util.Random;
 
 public abstract class BufferManager {
 
-    final int bufferSize;
-    private static Random rand = new Random(1L);
+    public final int bufferSize;
     private String defaultFilename;
+    private static Random rand = new Random(1L);
 
     /**
      * @param bufferSize Configurable size of buffer cache.
