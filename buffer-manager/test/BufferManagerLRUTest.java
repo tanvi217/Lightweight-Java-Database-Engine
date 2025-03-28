@@ -8,7 +8,7 @@ public class BufferManagerLRUTest {
 
     @Before
     public void setUp() {
-        bufferManager = new LRUBufferManager(2, false);
+        bufferManager = new LRUBufferManager(2, 4, false);
     }
 
     @Test
@@ -35,7 +35,7 @@ public class BufferManagerLRUTest {
         //see that there are 6000 lines (in hex) i.e. 6 pages worth of space. We do this using the hex editor installed on vscode
         int totalPages = 10;
         int bufferSize = 4;
-        BufferManager bm = new LRUBufferManager(bufferSize, true);
+        BufferManager bm = new LRUBufferManager(bufferSize, 4, true);
         for (int i = 0; i < totalPages; ++i) {
             Page page = bm.createPage();
             System.out.println("A" + page.getId());

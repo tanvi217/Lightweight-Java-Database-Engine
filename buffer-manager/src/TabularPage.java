@@ -31,26 +31,6 @@ public class TabularPage implements Page {
      */
 
     /**
-     * For retrieving pages
-     * @param pageId
-     * @param frameIndex
-     * @param pageStart
-     * @param pageLength
-     * @param buffer
-     */
-    public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer) {
-        this.pageId = pageId;
-        this.buffer = buffer;
-        this.pageStart = pageStart;
-        rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
-        nextRowIdLocation = rowLengthLocation + 4; // one int over
-        rowLength = buffer.getInt(rowLengthLocation);
-        nextRowId = buffer.getInt(nextRowIdLocation);
-        maxRows = (pageLength - METADATA_INTS * 4) / rowLength;
-        rows = new Row[maxRows];
-    }
-
-    /**
      * for new pages
      * @param pageId
      * @param frameIndex
@@ -59,16 +39,21 @@ public class TabularPage implements Page {
      * @param buffer
      * @param rowLength
      */
-    public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer, int rowLength) {
+    public TabularPage(int pageId, int pageStart, int pageLength, ByteBuffer buffer, int bytesInRow) {
         this.pageId = pageId;
         this.buffer = buffer;
         this.pageStart = pageStart;
         rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
         nextRowIdLocation = rowLengthLocation + 4; // one int over
-        buffer.putInt(rowLengthLocation, rowLength);
-        buffer.putInt(nextRowIdLocation, 0);
-        this.rowLength = rowLength;
-        nextRowId = 0;
+        if (bytesInRow == 0) {
+            nextRowId = buffer.getInt(nextRowIdLocation);
+            rowLength = buffer.getInt(rowLengthLocation);
+        } else {
+            buffer.putInt(rowLengthLocation, bytesInRow);
+            buffer.putInt(nextRowIdLocation, 0);
+            rowLength = bytesInRow;
+            nextRowId = 0;
+        }
         maxRows = (pageLength - METADATA_INTS * 4) / rowLength;
         rows = new Row[maxRows];
     }

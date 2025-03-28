@@ -6,8 +6,8 @@ public class Utilities {
 
     public static void main(String[] args) {
         //experimented with different buffer sizes by changing Constants.BUFFER_SIZE
-        BufferManager bufferManager = new LRUBufferManager(Constants.BUFFER_SIZE);
-        loadDataset(bufferManager, Constants.IMDB_FILE_PATH);
+        BufferManager bufferManager = new LRUBufferManager();
+        loadDataset(bufferManager, Constants.IMDB_TSV_FILE);
     }
 
     // Loads the buffer manager with the imdb dataset

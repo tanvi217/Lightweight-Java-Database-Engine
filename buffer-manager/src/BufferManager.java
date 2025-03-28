@@ -1,12 +1,17 @@
+import java.util.Random;
+
 public abstract class BufferManager {
 
     final int bufferSize;
+    private static Random rand = new Random(1L);
+    private String defaultFilename;
 
     /**
      * @param bufferSize Configurable size of buffer cache.
      */
     public BufferManager(int bufferSize) {
         this.bufferSize = bufferSize;
+        defaultFilename = "bm-" + String.valueOf(rand.nextInt((int) 1e9));
     }
 
     /**
@@ -25,14 +30,15 @@ public abstract class BufferManager {
      * Piazza @62 - "A page is considered "used" when createPage or getPage is
      * invoked on that page. Other events do not update the LRU status."
      *
-     * @param pageId The ID of the page to fetch.
+     * @param pageId   The ID of the page to fetch from the given file.
+     * @param filename A string representing the file, but not a full file path.
      * @return The Page object whose content is stored in a frame of the buffer
-     * pool manager.
+     *         pool manager.
      */
-    abstract Page getPage(int pageId, int fileIndex);
+    abstract Page getPage(int pageId, String filename);
 
     public Page getPage(int pageId) {
-        return getPage(pageId, 0);
+        return getPage(pageId, defaultFilename);
     }
 
     /**
@@ -45,12 +51,12 @@ public abstract class BufferManager {
      * previous pages to create new page IDs.
      *
      * @return The Page object whose content is stored in a frame of the buffer
-     * pool manager.
+     *         pool manager.
      */
-    abstract Page createPage(int fileIndex);
+    abstract Page createPage(String filename, int rowLength);
 
     public Page createPage() {
-        return createPage(0);
+        return createPage(defaultFilename, Constants.IMDB_ROW_LENGTH);
     }
 
     /**
@@ -62,7 +68,11 @@ public abstract class BufferManager {
      *
      * @param pageId The ID of the page to mark as dirty.
      */
-    abstract void markDirty(int pageId);
+    abstract void markDirty(int pageId, String filename);
+
+    public void markDirty(int pageId) {
+        markDirty(pageId, defaultFilename);
+    }
 
     /**
      * Unpins a page in the buffer pool, allowing it to be evicted if necessary.
@@ -78,6 +88,10 @@ public abstract class BufferManager {
      *
      * @param pageId The ID of the page to unpin.
      */
-    abstract void unpinPage(int pageId);
+    abstract void unpinPage(int pageId, String filename);
+
+    public void unpinPage(int pageId) {
+        unpinPage(pageId, defaultFilename);
+    }
 
 }

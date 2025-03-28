@@ -16,32 +16,29 @@ public class BufferManagerTest {
 
     public static BufferManager getNewBM(int bufferSize) {
         // CHANGE TO WHICHEVER IMPLEMENTATION YOU WANT TO TEST
-        //BufferManagerLRU was an older implementation, we kept the file this way in case we wanted to compare different implementations.
-        return new LRUBufferManager(bufferSize, true);
-        // return new BufferManagerLRU(bufferSize, false);
+        return new LRUBufferManager(bufferSize, Constants.PAGE_KB, true);
     }
 
     private BufferManager bm;
-    private static int bufferSize = 8;
-    private static int numPages = (bufferSize * 5) / 2;
-    private static int pageBytes = 4096;
-    private static int rowsPerPage = (pageBytes - 8) / Constants.ROW_SIZE;
+    private static int numPages = (Constants.BUFFER_SIZE * 5) / 2;
+    private static int pageBytes = Constants.PAGE_KB * 1024;
+    private static int rowsPerPage = (pageBytes - 8) / Constants.IMDB_ROW_LENGTH; // 8 for two metadata ints
     private static int numRows = rowsPerPage * numPages;
 
     @Before
     public void initializeBM() throws IOException { // runs before each test case
-        bm = getNewBM(bufferSize);
+        bm = getNewBM(Constants.BUFFER_SIZE);
     }
 
     @Test
     public void testCreatePage() throws IOException {
         //makes sure we can create numerous pages and check the id of the final page.
         Page p = null;
-        for (int i = 0; i < bufferSize; ++i) {
+        for (int i = 0; i < Constants.BUFFER_SIZE; ++i) {
             p = bm.createPage();
         }
         assertNotNull(p);
-        assertEquals(bufferSize - 1, p.getId());
+        assertEquals(Constants.BUFFER_SIZE - 1, p.getId());
     }
 
     @Test
