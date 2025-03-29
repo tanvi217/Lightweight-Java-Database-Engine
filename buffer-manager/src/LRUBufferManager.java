@@ -37,7 +37,7 @@ public class LRUBufferManager extends BufferManager {
      * @param numPagesInBuffer The number of frames, passed into the BufferManager
      *                         constructor. Same as bufferSize.
      * @param pageKB           Number of kibibytes in a page.
-     * @param debugPrinting    Relative path to binary file.
+     * @param debugPrinting    True if additional print statements should be run.
      */
     public LRUBufferManager(int numPagesInBuffer, int pageKB, boolean debugPrinting) {
         super(numPagesInBuffer);
@@ -58,8 +58,11 @@ public class LRUBufferManager extends BufferManager {
         this.debugPrinting = debugPrinting;
     }
 
+    /*
+     * Constructor overloading to allow caller to use default values.
+     */
     public LRUBufferManager(int numPagesInBuffer, boolean debugPrinting) { this(numPagesInBuffer, Constants.PAGE_KB, debugPrinting); }
-    public LRUBufferManager(int numPagesInBuffer) { this(Constants.BUFFER_SIZE, Constants.PAGE_KB, false); }
+    public LRUBufferManager(int numPagesInBuffer) { this(numPagesInBuffer, Constants.PAGE_KB, false); }
     public LRUBufferManager(boolean debugPrinting) { this(Constants.BUFFER_SIZE, Constants.PAGE_KB, debugPrinting); }
     public LRUBufferManager() { this(Constants.BUFFER_SIZE, Constants.PAGE_KB, false); }
 
@@ -304,6 +307,19 @@ public class LRUBufferManager extends BufferManager {
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public void force() {
+        for (int i = 0; i < bufferSize; ++i) {
+            if (isDirty[i]) {
+                int pageId = bufferPages[i].getId();
+                int pageKey = getPageKey(pageId, fileToWrite[i]);
+                writePageToDisk(pageId, pageKey);
+            }
+            isDirty[i] = false;
+            pinCount[i] = 0;
+        }
     }
 
 }
