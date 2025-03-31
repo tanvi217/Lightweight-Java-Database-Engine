@@ -1,15 +1,16 @@
 import java.util.ArrayList;
 import java.util.List;
 
-class BTreeInternalNode<K extends Comparable<K>> extends BTreeNode<K> {
+class BTreeInternalNodeBM<K extends Comparable<K>> extends BTreeNodeBM<K> {
     private List<BTreeNode<K>> children;    //child nodes of this internal node
 
-    public BTreeInternalNode() {
-        super(false);   //internal nodes are not leaves
+    public BTreeInternalNodeBM(BufferManager bm) {
+        super(false, bm);   //internal nodes are not leaves
         this.children = new ArrayList<>();  //initialize the children list
     }
     //this is for inserting a key into internal node
     public void insert(K key, Rid rid, BTreeIndex<K> tree) {        //insert a key to this internal node
+        //root can change as time goes on
         int pos = 0;    
         
         //find correct pos for insertion
@@ -67,5 +68,10 @@ class BTreeInternalNode<K extends Comparable<K>> extends BTreeNode<K> {
 
     public List<BTreeNode<K>> getChildren() {
         return children;
+    }
+
+    public byte[] serialize(){
+        //todo
+        return new byte[2];
     }
 }
