@@ -7,8 +7,22 @@ public class Utilities {
     public static void main(String[] args) {
         //experimented with different buffer sizes by changing Constants.BUFFER_SIZE
         BufferManager bufferManager = new LRUBufferManager();
+
         loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
+
         // loadInterleavedDataset(bufferManager, Constants.IMDB_TSV_FILE);
+
+        // // TestC1 - create index on title
+        // BTreeIndex<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX);
+
+        // // TestC3 - Verify index on title
+        // IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Boxing", Constants.TITLE_INDEX);
+
+        // // TestC2 - create index on title
+        // BTreeIndex<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX);
+
+        // // TestC3 - Verify index on title
+        // IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.TITLE_INDEX);
     }
 
     public static void loadDatasetSequentially(BufferManager bf, String csvFile) {
@@ -51,7 +65,7 @@ public class Utilities {
                     bf.markDirty(pageId);
 
                     if (rowsProcessed % 1000000 == 0) {
-                        System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
+                        System.out.println("Processed row with ID " + rowId + " in page with Id " + currentPage.getId());
                         System.out.println(rowsProcessed + " rows processed.");
                     }
 
