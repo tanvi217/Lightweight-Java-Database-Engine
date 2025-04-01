@@ -21,6 +21,11 @@ public class BTreeTest {
         } else {
             System.out.println("key 30 NOT found");
         }
+        //searching for a specific key
+        System.out.println("Searching for key 40...");
+        Iterator<Rid> searchResult2 = btree.search(40);
+        System.out.println(searchResult2.next());
+        System.out.println(searchResult2.hasNext());
     }
 
     private static void insertAndPrint(BTreeIndex<Integer> btree, int key) {
