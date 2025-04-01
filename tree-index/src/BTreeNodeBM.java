@@ -1,10 +1,10 @@
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class BTreeNodeBM<K extends Comparable<K>> {
-    protected List<K> keys;
+abstract class BTreeNodeBM{
+    protected List<byte[]> keys;
     protected boolean isLeaf;
-    protected BTreeNode<K> parent;
+    protected BTreeNodeBM parent;
     protected BufferManager bm;
 
     public BTreeNodeBM(boolean isLeaf, BufferManager bm) {
@@ -18,21 +18,21 @@ abstract class BTreeNodeBM<K extends Comparable<K>> {
         return isLeaf;
     }
 
-    public List<K> getKeys() {
+    public List<byte[]> getKeys() {
         return keys;
     }
 
-    public BTreeNode<K> getParent() {
+    public BTreeNodeBM getParent() {
         return parent;
     }
 
-    public void setParent(BTreeNode<K> parent) {
+    public void setParent(BTreeNodeBM parent) {
         this.parent = parent;
     }
 
-    public List<BTreeNode<K>> getChildren() {
+    public List<BTreeNodeBM> getChildren() {
         return null;
     }
 
-    public abstract void insert(K key, Rid rid, BTreeIndex<K> tree);
+    public abstract void insert(byte[] key, Rid rid, BTreeIndexBM tree);
 }

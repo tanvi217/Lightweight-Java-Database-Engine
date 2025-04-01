@@ -2,9 +2,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Arrays;
 
-public class BTreeIndexBM<K extends Comparable<K>> {
-    private BTreeNode<K> root; //root of the tree
+public class BTreeIndexBM{
+    //we are going to store (mostly) everything as byte arrays to make things easier
+    private BTreeNodeBM root; //root of the tree
     private int maxKeys; //max nos. of keys in node
     private BufferManager bm;
     private int rootPid = 0;
