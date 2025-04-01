@@ -54,4 +54,9 @@ public class BTreeIndex<K extends Comparable<K>> {
     public void setRoot(BTreeInternalNode<K> root) {
         this.root = root;   //to set the root
     }
+
+    // TODO
+    public Iterator<Rid> rangeSearch(K startKey, K endKey) {
+        return List.<Rid>of().iterator();
+    }
 }

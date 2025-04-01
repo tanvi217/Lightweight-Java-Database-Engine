@@ -8,7 +8,7 @@ public class CreateIndex {
         //experimented with different buffer sizes by changing Constants.BUFFER_SIZE
         BufferManager bufferManager = new LRUBufferManager();
 
-        loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
+        int totalRowsInTable = loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
 
         // TestC1 - create index on title
         BTreeIndex<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX);
@@ -16,14 +16,33 @@ public class CreateIndex {
         // TestC3 - Verify index on title
         IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Boxing", Constants.TITLE_INDEX);
 
-        // TestC2 - create index on title
-        BTreeIndex<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX);
+        // TestC4 - Verify index on title
+        IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boxing", "Boxing", Constants.TITLE_INDEX);
 
-        // TestC3 - Verify index on title
-        IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.TITLE_INDEX);
+        // TestC2 - create index on movieId
+        BTreeIndex<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.MOVIE_ID_INDEX);
+
+        // TestC3 - Verify index on movieId
+        IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_INDEX);
+
+        // TestC4 - Verify index on movieId
+        IndexTests.verifyRange(titleIndexBTree, bufferManager, "tt0000137", "tt0000147", Constants.MOVIE_ID_INDEX);
+
+        // TestP1, P2 - Range query comparision on title
+        String[][] ranges = {
+            {"MovieA", "MovieC"},
+            {"MovieA", "MovieP"},
+            {"MovieA", "MovieZ"}
+        };
+
+        IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, ranges, 0, totalRowsInTable);
+
+        IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, ranges, 1, totalRowsInTable);
     }
 
-    public static void loadDatasetSequentially(BufferManager bf, String csvFile) {
+    public static int loadDatasetSequentially(BufferManager bf, String csvFile) {
+        int rowsProcessed = 0;
+
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
             String curRow;
             int pageId = 0;
@@ -32,7 +51,6 @@ public class CreateIndex {
             int pagesCreated = 0;
             boolean skipLongMovieId = true;
             int skippedMovies = 0;
-            int rowsProcessed = 0;
 
             while (curRow != null) {
                 
@@ -81,6 +99,8 @@ public class CreateIndex {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        return rowsProcessed;
     }
 
     // Loads the buffer manager with the imdb dataset
