@@ -12,7 +12,7 @@
 
 ### teaching and course assistants
 - Sandeep Polisetty (sandeep06011991)
-- Hasnain Heickal (hheickal)
+- Hasnain Heickal (hheickal-umass)
 - Alex Zheng (alex-haozheng)
 - Harshini Bharanidharan (hbharanidhar)
 - Meghana Krishnan (meghanakrish19)
