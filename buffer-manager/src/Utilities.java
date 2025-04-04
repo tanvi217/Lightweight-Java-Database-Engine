@@ -39,7 +39,7 @@ public class Utilities {
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
 
-                    if (skipLongMovieId && movieId.length > Constants.MOVIE_ID_SIZE) {
+                    if (skipLongMovieId && movieId.length > Constants.IMDB_MOVIE_ID_SIZE) {
                         skippedMovies++;
                         curRow = bufferReader.readLine();
                         continue;
@@ -86,7 +86,7 @@ public class Utilities {
                     String[] columns = curRow.split("\t");
                     byte[] movieId = columns[0].getBytes();
 
-                    if (skipLongMovieId && movieId.length > Constants.MOVIE_ID_SIZE) {
+                    if (skipLongMovieId && movieId.length > Constants.IMDB_MOVIE_ID_SIZE) {
                         skippedMovies++;
                         curRow = bufferReader.readLine();
                         continue;
@@ -138,7 +138,7 @@ public class Utilities {
                 String[] columns = curRow.split("\t");
                 byte[] movieId = columns[0].getBytes();
 
-                if (skipLongMovieId && movieId.length > Constants.MOVIE_ID_SIZE) {
+                if (skipLongMovieId && movieId.length > Constants.IMDB_MOVIE_ID_SIZE) {
                     skippedMovies++;
                     curRow = bufferReader.readLine();
                     continue;
