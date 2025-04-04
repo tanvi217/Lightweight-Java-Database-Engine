@@ -56,8 +56,8 @@ public class BufferManagerTest {
 
     private Row testRow(int pageId, int rowNumber, boolean correctSizes) {
         //function used to generate a row for testing purposes.
-        int movieIdBytes = correctSizes ? 9 : 4;
-        int titleBytes = correctSizes ? 30 : 4;
+        int movieIdBytes = correctSizes ? Constants.IMDB_MOVIE_ID_SIZE : 4;
+        int titleBytes = correctSizes ? Constants.IMDB_TITLE_SIZE : 4;
         byte[] movieId = ByteBuffer.allocate(movieIdBytes).putInt(pageId).array();
         byte[] title = ByteBuffer.allocate(titleBytes).putInt(rowNumber).array();
         return new Row(movieId, title);

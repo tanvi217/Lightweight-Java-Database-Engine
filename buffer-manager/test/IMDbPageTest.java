@@ -8,7 +8,7 @@ public class IMDbPageTest {
     private TabularPage page;
     private ByteBuffer buffer;
     private final int pageBytes = 400; // Example page size, want to try something different than usual 4096
-    private final int maxRows = (pageBytes - 1) / 39;
+    private final int maxRows = (pageBytes - 8) / Constants.IMDB_ROW_LENGTH;
     private Row mockRow1;
     private Row mockRow2;
 
@@ -16,7 +16,7 @@ public class IMDbPageTest {
     public void setUp() {
         //setup for tests
         buffer = ByteBuffer.allocate(1000); // Large enough buffer for multiple smaller pages
-        int rowLength = Constants.MOVIE_ID_SIZE + Constants.TITLE_SIZE;
+        int rowLength = Constants.IMDB_MOVIE_ID_SIZE + Constants.IMDB_TITLE_SIZE;
         page = new TabularPage(1, 0, pageBytes, buffer, rowLength);
 
         // Initialize mock rows with valid movieId and title
