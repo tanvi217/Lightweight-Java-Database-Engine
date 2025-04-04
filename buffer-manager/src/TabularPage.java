@@ -103,6 +103,14 @@ public class TabularPage implements Page {
         rows[rowId] = newRow;
     }
 
+    public int get_nextRowId(){
+        return nextRowId;
+    }
+
+    public int get_rowLength(){
+        return rowLength;
+    }
+
     @Override
     public boolean isFull() {
         return nextRowId >= maxRows;

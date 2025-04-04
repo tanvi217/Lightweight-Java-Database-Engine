@@ -1,38 +1,37 @@
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Arrays;
 
+//important, each node is an ENTIRE PAGE. The rows size will be chosen accordingly
 public class BTreeIndexBM{
-    //we are going to store (mostly) everything as byte arrays to make things easier
-    private int maxKeysBytes; //used to denote how many bytes are set aside for storing maxKeys
-    private byte[] root; //root of the tree
+    //we are going to store (mostly) everything as byte arrays and pages to make things easier
+    //instead we can stored maxKeysBytes in the first row, since we won't have a key there anyway
+    private TabularPage root; //root of the tree
     private boolean rootIsLeaf; //true if the root node is a leaf node, false otherwise
     private int maxKeys; //max nos. of keys in node
     private BufferManager bm;
     private int rootPid = 0;
-    private int rootSid = 0;
-    private Page rootPage;
-    private final int fixedLength = 15;
+    private final int fixedKeyLength = 15;
+    private int leafNodeRowLength;
 
-    public BTreeIndexBM(int maxKeys, BufferManager bm) {
-        //each entry needs a k, i.e. the actual value the index is being sorted by
+    public BTreeIndexBM(BufferManager bm) {
+        //each entry (root starts as a leaf node) needs a k, i.e. the actual value the index is being sorted by
         //a rid which is a page id and a slot id (an int, i.e. 4 bytes allocated for every page id and slot id should be sufficient)
-        //a previous pointer, again a page id and slot id
-        //a next pointer, again a page id and slot id
-
-        //for efficiency the first couple bytes of every row is going to be used to denote how full the current node is 
-        int numBitsFormaxKeys = 32 - Integer.numberOfLeadingZeros(maxKeys);
-        maxKeysBytes = (numBitsFormaxKeys + 7)/8; //for rounding down
-
-        this.root = new byte[maxKeysBytes+maxKeys*(fixedLength+3*8)];  //leaf node as the root at start, size should be
-        this.rootPage = bm.createPage("BTree", maxKeysBytes+maxKeys*(fixedLength+3*8));
-        this.rootPid = rootPage.getId();
-        this.rootSid = rootPage.insertRow(new Row(this.root));
+        //only ONCE at the beginning/end of the page we need a previous pointer and a next pointer, both page ids
+        leafNodeRowLength=fixedKeyLength+8+2*4;
+        this.root = (TabularPage)bm.createPage("BTree", (leafNodeRowLength));
+        this.rootPid = root.getId();
         rootIsLeaf = true;
-        this.maxKeys = maxKeys;    //setting max keys for nodes
         this.bm = bm;
+        //will initialize the previous and next pointers have 1s in the remaining fixedkeyLength-8 bytes
+        byte[] initialNextPrev = new byte[fixedKeyLength];
+        for(int i = 8; i < initialNextPrev.length; i++){
+            initialNextPrev[i]=1;
+        }
+        root.insertRow(new Row(initialNextPrev));
     }
     //might want to add somewhere a truncating function, for movieTitles for example, because in page we truncate whole rows where
     //here a row can consist of multiple movietitles. Here is the function from another place...
@@ -50,19 +49,48 @@ public class BTreeIndexBM{
 
         return resized;
     }
-         
-
-    public int getMaxKeys() {
-        return maxKeys;
-    }
 
     //new idea, ditch the classes they are just making it harder for me to think through, instead just have this file
     //we want another private insert function which we will call for everything past the root, we can think of as recursing down
     //but with a slightly different function
     public void insert(byte[] key, Rid rid){
+        //first we create the Row we are actually going to insert into the page
+        ByteBuffer b = ByteBuffer.allocate(fixedKeyLength);
+        b.put(key);
+        b.putInt(rid.getPageId());
+        b.putInt(rid.getSlotId());
+        byte[] byteToInsert = b.array();
+        Row rowToInsert = new Row(byteToInsert);
+        key = toSize(key, fixedKeyLength);
+        //something to note, if there is not room to add we have to split the node. In this case we need to create a new node and 
+        //add over the new data. Furthermore we need to implement deletions into page and to do that we can just set the nextNodeId
+        //pointer to be way earlier and then for our purposes the data is 'deleted'
         if(rootIsLeaf){
             //in this case the root is just a leaf node, if there is room add to root
-            
+            if (!root.isFull()){
+                //leaf nodes will always have their first entry instead be two pageIDs referring to previous and next respectively
+                int i =1;
+                while(i<root.get_nextRowId()){
+                    Row currRow = root.getRow(i);
+                    int comparison = Arrays.compare(currRow.data, 0, fixedKeyLength, key, 0, fixedKeyLength);
+                    if(comparison==1){
+                        //currRow is bigger so stop here, i is where we want to insert
+                        break;
+                    }
+                    i++;
+                }
+                //now i is the place where we want to insert
+                Row nextRowToInsert = rowToInsert;
+                while(i < root.get_nextRowId()){
+                    //get what's currently at i and save it to be used in the next iteration of the loop
+                    Row currRow = root.getRow(i);
+                    root.modifyRow(nextRowToInsert, i);
+                    nextRowToInsert = currRow;
+                    i++;
+                }
+                //now we need to add on one new node at the end
+                root.insertRow(nextRowToInsert);
+            }
         }
     }
     //temp is just so the above is a different function because I want to think througb logic from scratch
