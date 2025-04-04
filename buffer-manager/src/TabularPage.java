@@ -92,6 +92,17 @@ public class TabularPage implements Page {
         return rowId;
     }
 
+    //modifies an existing row, based on its rowId and replaces it with the given Row, newRow
+    public void modifyRow(Row newRow, int rowId){
+        if(rowId < 0 || rowId >= nextRowId){
+            throw new IllegalArgumentException("Row index out of bounds.");
+        }
+        int rowStart = pageStart + rowId * rowLength;
+        buffer.position(rowStart);
+        buffer.put(toSize(newRow.data, rowLength)); // write data to buffer
+        rows[rowId] = newRow;
+    }
+
     @Override
     public boolean isFull() {
         return nextRowId >= maxRows;
