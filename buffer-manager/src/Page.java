@@ -28,4 +28,9 @@ public interface Page {
      */
     int getId();
 
+    /**
+     * @return the number of rows in this Page.
+     */
+    int height();
+
 }

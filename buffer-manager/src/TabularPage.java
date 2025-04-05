@@ -103,7 +103,7 @@ public class TabularPage implements Page {
         rows[rowId] = newRow;
     }
 
-    public int get_nextRowId(){
+    public int height(){
         return nextRowId;
     }
 
