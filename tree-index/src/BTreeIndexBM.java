@@ -21,16 +21,16 @@ public class BTreeIndexBM{
         //each entry (root starts as a leaf node) needs a k, i.e. the actual value the index is being sorted by
         //a rid which is a page id and a slot id (an int, i.e. 4 bytes allocated for every page id and slot id should be sufficient)
         //only ONCE at the beginning/end of the page we need a previous pointer and a next pointer, both page ids
-        leafNodeRowLength=fixedKeyLength+8+2*4;
+        leafNodeRowLength=fixedKeyLength+8;
         this.root = (TabularPage)bm.createPage("BTree", (leafNodeRowLength));
         this.rootPid = root.getId();
         rootIsLeaf = true;
         this.bm = bm;
-        //will initialize the previous and next pointers have 1s in the remaining fixedkeyLength-8 bytes
-        byte[] initialNextPrev = new byte[fixedKeyLength];
-        for(int i = 8; i < initialNextPrev.length; i++){
-            initialNextPrev[i]=1;
-        }
+        //will initialize the previous and next pointers as  -1s in the remaining fixedkeyLength-8 bytes, because those are not valid pageids
+        ByteBuffer b = ByteBuffer.allocate(leafNodeRowLength);
+        b.putInt(-1);
+        b.putInt(-1);
+        byte[] byteToInsert = b.array();
         root.insertRow(new Row(initialNextPrev));
     }
     //might want to add somewhere a truncating function, for movieTitles for example, because in page we truncate whole rows where
@@ -54,14 +54,15 @@ public class BTreeIndexBM{
     //we want another private insert function which we will call for everything past the root, we can think of as recursing down
     //but with a slightly different function
     public void insert(byte[] key, Rid rid){
+        //padding/trimming key so it is the fixed size
+        key = toSize(key, fixedKeyLength);
         //first we create the Row we are actually going to insert into the page
-        ByteBuffer b = ByteBuffer.allocate(fixedKeyLength);
+        ByteBuffer b = ByteBuffer.allocate(leafNodeRowLength);
         b.put(key);
         b.putInt(rid.getPageId());
         b.putInt(rid.getSlotId());
         byte[] byteToInsert = b.array();
         Row rowToInsert = new Row(byteToInsert);
-        key = toSize(key, fixedKeyLength);
         //something to note, if there is not room to add we have to split the node. In this case we need to create a new node and 
         //add over the new data. Furthermore we need to implement deletions into page and to do that we can just set the nextNodeId
         //pointer to be way earlier and then for our purposes the data is 'deleted'

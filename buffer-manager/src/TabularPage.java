@@ -111,6 +111,11 @@ public class TabularPage implements Page {
         return rowLength;
     }
 
+    public void set_nextRowId(int newNextRowId){
+        nextRowId = newNextRowId;
+        buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
+    }
+
     @Override
     public boolean isFull() {
         return nextRowId >= maxRows;
