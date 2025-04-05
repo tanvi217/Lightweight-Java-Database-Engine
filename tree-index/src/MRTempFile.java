@@ -11,7 +11,6 @@ class Main {
     private int treeDepth;
     private int keyLength;
     private String fileTitle;
-    // private static byte[] maxKey;
 
     private byte[][] splitRow(Page nodePage, int rowId) {
         byte[] rowData = nodePage.getRow(rowId).data;
@@ -21,18 +20,19 @@ class Main {
     }
 
     private int findInNonLeafPage(byte[] key, int pageId) {
-        TabularPage nodePage = (TabularPage) bm.getPage(pageId, fileTitle);
-        byte[] leftPage = splitRow(nodePage, 0)[1];
-        int rowId = 1; // start at second row
-        while (rowId < nodePage.get_nextRowId()) {
+        Page nodePage = bm.getPage(pageId, fileTitle);
+        byte[] leftPointer = splitRow(nodePage, 0)[1]; // pageId bytes of first row
+        int rowId = 1; // start loop at second row
+        while (rowId < nodePage.height()) {
             byte[][] keyValue = splitRow(nodePage, rowId);
-            if (Arrays.compare(key, keyValue[0]) <= 0 || rowId == nodePage.get_nextRowId() - 1) {
+            if (Arrays.compare(key, keyValue[0]) <= 0) { // compare key to current row's key
                 break;
             }
-            leftPage = keyValue[1];
-        }
+            leftPointer = keyValue[1]; // pageId bytes of current row
+            ++rowId;
+        } // if break is never reached, the loop ends with leftPointer being the pageId of the final row
         bm.unpinPage(pageId, fileTitle);
-        return ByteBuffer.wrap(leftPage).getInt();
+        return ByteBuffer.wrap(leftPointer).getInt(); // convert pageId bytes to int
     }
 
     private int[] getSearchPath(byte[] key) {
