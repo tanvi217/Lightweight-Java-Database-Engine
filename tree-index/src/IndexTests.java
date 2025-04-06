@@ -35,7 +35,7 @@ public class IndexTests {
         return btree;
     }
 
-    public static void verifyIndex(BTreeIndex<String> bTreeIndex, BufferManager bm, String key, int attributeIndex) {
+    public static void verifyIndex(BTreeIndexBM bTreeIndex, BufferManager bm, String key, int attributeIndex) {
         Iterator<Rid> rids = bTreeIndex.search(key);
 
         if (!rids.hasNext()) {
@@ -60,8 +60,8 @@ public class IndexTests {
     }
 
     /* TODO: Implement rangeSearch in BPlusTree */
-    public static void verifyRange(BTreeIndex<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
-        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
+    public static void verifyRange(BTreeIndexBM bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
+        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.getBytes(), endKey);
 
         if (!rids.hasNext()) {
             System.out.println("Couldn't find entries in the range: " + startKey + ", " + endKey);
@@ -84,7 +84,7 @@ public class IndexTests {
         }
     }
 
-    public static void compareRangeSearch(BTreeIndex<String> bTreeIndex, BufferManager bm, String[][] ranges, int attributeIndex, int totalRowsInTable) {
+    public static void compareRangeSearch(BTreeIndexBM bTreeIndex, BufferManager bm, String[][] ranges, int attributeIndex, int totalRowsInTable) {
         List<Double> selectivities = new ArrayList<>();
         List<Double> scanTimes = new ArrayList<>();
         List<Double> indexTimes = new ArrayList<>();
@@ -101,7 +101,7 @@ public class IndexTests {
 
             // Index range query
             startTime = System.nanoTime();
-            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
+            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.getBytes(), endKey);
             List<Row> indexResults = fetchRows(bm, rids);
             long indexTime = System.nanoTime() - startTime;
             indexTimes.add(indexTime / 1e6); // msec
