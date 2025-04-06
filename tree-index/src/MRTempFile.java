@@ -8,23 +8,33 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class Main<K> {
+class MRTempFile<K> {
 
+    private static int numInstances = 0;
     private BufferManager bm;
     private int rootPid;
 
     private int treeDepth;
-    private int keyLength;
+    private int bytesInKey;
     private String fileTitle;
+
+    public MRTempFile(BufferManager bm, int bytesInKey) {
+        this.bm = bm;
+        this.bytesInKey = bytesInKey;
+        treeDepth = 1;
+        fileTitle = "B-plus-tree-" + (++numInstances);
+        
+        rootPid = 0; // call a method to create leaf node? which returns Pid of created page
+    }
 
     private byte[] dataAfterKey(Page nodePage, int rowId) {
         byte[] rowData = nodePage.getRow(rowId).data;
-        return Arrays.copyOfRange(rowData, keyLength, rowData.length);
+        return Arrays.copyOfRange(rowData, bytesInKey, rowData.length);
     }
 
     private int compareKeyToRow(byte[] key, Page nodePage, int rowId) {
         byte[] rowData = nodePage.getRow(rowId).data;
-        return Arrays.compare(key, 0, keyLength, rowData, 0, keyLength);
+        return Arrays.compare(key, 0, bytesInKey, rowData, 0, bytesInKey);
     }
 
     private int findInNonLeafPage(byte[] key, int pageId) {
@@ -42,23 +52,10 @@ class Main<K> {
         return ByteBuffer.wrap(leftPointer).getInt(); // convert pageId bytes to int
     }
 
-    private int[] getSearchPath(byte[] key) {
-        int[] searchPath = new int[treeDepth];
-        int currentPid = rootPid;
-        int depthIndex = 0;
-        while (depthIndex < treeDepth - 1) {
-            searchPath[depthIndex] = currentPid;
-            currentPid = findInNonLeafPage(key, currentPid);
-            ++depthIndex;
-        }
-        searchPath[depthIndex] = currentPid;
-        return searchPath;
-    }
-
     public byte[] getKeyFromComparable(K callerKey) {
         if (callerKey instanceof String) {
             String keyString = (String) callerKey;
-            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), keyLength);
+            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), bytesInKey);
         } else if (callerKey instanceof Integer) {
             int keyInt = (Integer) callerKey;
             return ByteBuffer.allocate(4).putInt(keyInt).array();
@@ -84,16 +81,29 @@ class Main<K> {
             matches.add(new Rid(dataAfterKey(leafPage, rowId)));
             ++rowId;
         }
-        int nextLeafPid = getIntFromRow(leafPage, rowId, 1);
+        boolean unfinished = rowId == pageHeight;
+        int nextLeafPid = unfinished ? getIntFromRow(leafPage, rowId, 1) : 0;
         bm.unpinPage(leafPid, fileTitle);
-        if (rowId == pageHeight) { // if last row still matches, some matches may be in next leaf
+        if (unfinished) { // if last row still matches, some matches may be in next leaf
             matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
         }
         return matches;
     }
 
+    private int[] getSearchPath(byte[] key) {
+        int[] searchPath = new int[treeDepth];
+        int currentPid = rootPid;
+        int depthIndex = 0;
+        while (depthIndex < treeDepth - 1) {
+            searchPath[depthIndex] = currentPid;
+            currentPid = findInNonLeafPage(key, currentPid);
+            ++depthIndex;
+        }
+        searchPath[depthIndex] = currentPid;
+        return searchPath;
+    }
+
     private Iterator<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
-        List<Rid> matches = new ArrayList<>();
         int pageId = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
         return getLeafMatches(pageId, startKey, endKey).iterator();
     }
@@ -103,10 +113,15 @@ class Main<K> {
         return internalRangeSearch(key, key);
     }
 
-    public Iterator<Rid> rangeSearch(K startKeyString, K endKeyString) {
-        byte[] startKey = getKeyFromComparable(startKeyString);
-        byte[] endKey = getKeyFromComparable(endKeyString);
+    public Iterator<Rid> rangeSearch(K callerStartKey, K callerEndKey) {
+        byte[] startKey = getKeyFromComparable(callerStartKey);
+        byte[] endKey = getKeyFromComparable(callerEndKey);
         return internalRangeSearch(startKey, endKey);
+    }
+
+    public void insert(K callerKey, Rid rid) {
+        byte[] key = getKeyFromComparable(callerKey);
+        int[] searchPath = getSearchPath(key);
     }
 
 }
