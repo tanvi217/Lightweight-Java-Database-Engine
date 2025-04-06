@@ -17,15 +17,28 @@ class MRTempFile<K> {
     private int treeDepth;
     private int bytesInKey;
     private String fileTitle;
+    private int pinDepth;
 
-    public MRTempFile(BufferManager bm, int bytesInKey) {
+    private int createNodePage(int depthIndex) {
+        boolean isLeaf = depthIndex == treeDepth - 1;
+        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
+        int pageId = bm.createPage(fileTitle, bytesInRow);
+        if (depthIndex >= pinDepth) { // if depthIndex < pinDepth keep page pinned
+            bm.unpinPage(pageId, fileTitle);
+        }
+        return pageId;
+    }
+
+    public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
+        this.pinDepth = pinDepth;
         treeDepth = 1;
         fileTitle = "B-plus-tree-" + (++numInstances);
-        
-        rootPid = 0; // call a method to create leaf node? which returns Pid of created page
+        rootPid = createNodePage(0);
     }
+
+    public MRTempFile(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, 0); }
 
     private byte[] dataAfterKey(Page nodePage, int rowId) {
         byte[] rowData = nodePage.getRow(rowId).data;
@@ -119,9 +132,42 @@ class MRTempFile<K> {
         return internalRangeSearch(startKey, endKey);
     }
 
+    private void handleSplit() {
+
+    }
+
+    private void insertIntoNode(byte[] key, Row newRow, int nodePageId, int[] searchPath) {
+        Page targetPage = bm.getPage(nodePageId, fileTitle);
+        if (targetPage.isFull()) {
+            handleSplit();
+        }
+        int rowId = 1;
+        while (rowId < targetPage.height()) {
+            if (compareKeyToRow(key, targetPage, rowId) <= 0) {
+                break;
+            }
+            ++rowId;
+        }
+        Row rowToInsert = newRow;
+        while (rowId < targetPage.height()) {
+            Row rowToMove = targetPage.getRow(rowId);
+            targetPage.modifyRow(rowToInsert, rowId);
+            rowToInsert = rowToMove;
+            ++rowId;
+        }
+        targetPage.insertRow(rowToInsert);
+        bm.unpinPage(targetPage, fileTitle);
+    }
+
     public void insert(K callerKey, Rid rid) {
         byte[] key = getKeyFromComparable(callerKey);
         int[] searchPath = getSearchPath(key);
+        int leafPid = searchPath[treeDepth - 1];
+        ByteBuffer rowData = ByteBuffer.allocate(bytesInKey + 8);
+        rowData.put(key);
+        rowData.putInt(rid.getPageId());
+        rowData.putInt(rid.getSlotId());
+        insertIntoNode(key, new Row(rowData.array()), leafPid, searchPath);
     }
 
 }
