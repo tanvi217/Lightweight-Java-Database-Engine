@@ -11,7 +11,7 @@ public class CreateIndex {
         int totalRowsInTable = loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
 
         // TestC1 - create index on title
-        BTreeIndex<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX);
+        BTreeIndexBM titleIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX);
 
         // TestC3 - Verify index on title
         IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Boxing", Constants.TITLE_INDEX);
@@ -20,7 +20,7 @@ public class CreateIndex {
         IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boxing", "Boxing", Constants.TITLE_INDEX);
 
         // TestC2 - create index on movieId
-        BTreeIndex<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.MOVIE_ID_INDEX);
+        BTreeIndexBM movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.MOVIE_ID_INDEX);
 
         // TestC3 - Verify index on movieId
         IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_INDEX);

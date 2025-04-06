@@ -5,8 +5,8 @@ import java.util.List;
 
 public class IndexTests {
 
-    public static BTreeIndex<String> CreateIndex(BufferManager bm, int attributeIndex) {
-        BTreeIndex<String> btree = new BTreeIndex<String>(4);
+    public static BTreeIndexBM CreateIndex(BufferManager bm, int attributeIndex) {
+        BTreeIndexBM btree = new BTreeIndexBM(bm);
         int pageId = 0;
 
         while (true) {
@@ -16,8 +16,7 @@ public class IndexTests {
                 for (int rowId = 0; rowId < Constants.MAX_PAGE_ROWS; rowId++) {
                     try {
                         Row row = page.getRow(rowId);
-                        String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
-                        btree.insert(key, new Rid(pageId, rowId));
+                        btree.insert(row.getAttribute(attributeIndex), new Rid(pageId, rowId));
                     }
                     catch (Exception ex) { }
                 }
