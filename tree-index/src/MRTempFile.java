@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class Main {
+class Main<K> {
 
     private BufferManager bm;
     private int rootPid;
@@ -55,25 +55,58 @@ class Main {
         return searchPath;
     }
 
-    public byte[] getKeyFromString(String keyString) {
-        return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), keyLength);
+    public byte[] getKeyFromComparable(K callerKey) {
+        if (callerKey instanceof String) {
+            String keyString = (String) callerKey;
+            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), keyLength);
+        } else if (callerKey instanceof Integer) {
+            int keyInt = (Integer) callerKey;
+            return ByteBuffer.allocate(4).putInt(keyInt).array();
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
 
-    private List<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
-        List<Rid> matches = new ArrayList<>();
+    private int getIntFromRow(Page nodePage, int rowId, int index) {
+        byte[] rowData = nodePage.getRow(rowId).data;
+        return ByteBuffer.wrap(rowData).getInt(index * 4);
+    }
 
+    private List<Rid> getLeafMatches(int leafPid, byte[] startKey, byte[] endKey) {
+        List<Rid> matches = new ArrayList<>();
+        Page leafPage = bm.getPage(leafPid, fileTitle);
+        int pageHeight = leafPage.height();
+        int rowId = 1; // start at second row
+        while (rowId < pageHeight && compareKeyToRow(startKey, leafPage, rowId) < 0) {
+            ++rowId;
+        }
+        while (rowId < pageHeight && compareKeyToRow(endKey, leafPage, rowId) >= 0) {
+            matches.add(new Rid(dataAfterKey(leafPage, rowId)));
+            ++rowId;
+        }
+        int nextLeafPid = getIntFromRow(leafPage, rowId, 1);
+        bm.unpinPage(leafPid, fileTitle);
+        if (rowId == pageHeight) { // if last row still matches, some matches may be in next leaf
+            matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
+        }
         return matches;
     }
 
-    public Iterator<Rid> search(String keyString) {
-        byte[] key = getKeyFromString(keyString);
-        return internalRangeSearch(key, key).iterator();
+    private Iterator<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
+        List<Rid> matches = new ArrayList<>();
+        int pageId = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
+        return getLeafMatches(pageId, startKey, endKey).iterator();
     }
 
-    public Iterator<Rid> rangeSearch(String startKeyString, String endKeyString) {
-        byte[] startKey = getKeyFromString(startKeyString);
-        byte[] endKey = getKeyFromString(endKeyString);
-        return internalRangeSearch(startKey, endKey).iterator();
+    public Iterator<Rid> search(K callerKey) {
+        byte[] key = getKeyFromComparable(callerKey);
+        return internalRangeSearch(key, key);
+    }
+
+    public Iterator<Rid> rangeSearch(K startKeyString, K endKeyString) {
+        byte[] startKey = getKeyFromComparable(startKeyString);
+        byte[] endKey = getKeyFromComparable(endKeyString);
+        return internalRangeSearch(startKey, endKey);
     }
 
 }
