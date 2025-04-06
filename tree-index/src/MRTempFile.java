@@ -163,19 +163,19 @@ class MRTempFile<K> {
         //don't need +1 because middleKey in right page
         targetPage.setHeight(middleRowId);
         if(isLeaf){
-            insertIntoLeafPage(key, rid, newPage.getId(), parentPageIds);
+            insertIntoNode(key, newRow, newPage.getId(), searchPath);
             //now setting the previous and next pointers
             //first we get the original ones out
             int ogPrev = getIntFromRow(targetPage, 0, 0);
             int ogNext = getIntFromRow(targetPage, 0, 1);
             //first put the older previous and newPageId as next in the pageToSplit page
-            ByteBuffer pageToSplitBuff = ByteBuffer.allocate(targetPage.get_rowLength());
+            ByteBuffer pageToSplitBuff = ByteBuffer.allocate(bytesInRow);
             pageToSplitBuff.putInt(ogPrev);
             pageToSplitBuff.putInt(newPageId);
             targetPage.modifyRow(new Row(pageToSplitBuff.array()), 0);
             
             //now put the pageToSplit as previous and the old next as the next pointer
-            ByteBuffer newPageBuff = ByteBuffer.allocate(newPage.get_rowLength());
+            ByteBuffer newPageBuff = ByteBuffer.allocate(bytesInRow);
             newPageBuff.putInt(targetPage.getId());
             newPageBuff.putInt(ogNext);
             newPage.modifyRow(new Row(newPageBuff.array()), 0);
@@ -191,19 +191,20 @@ class MRTempFile<K> {
     
         //now the pages are correctly created, we just need to "push up" the right value to insertIntoNonLeafPage
         //We NEED TO CHECK IF THIS IS THE ROOT, IF IT IS THEN WE MUST CREATE A NEW NODE TO PUSH UP INTO, and can just manually do it here
-        if(pageId ==rootPid){
+        if(nodePageId == rootPid){
             //this means we are splitting the root, so need to make a new root that looks at this properly
-            TabularPage newRoot = (TabularPage)bm.createPage(fileTitle, nonLeafNodeRowLength);
+            int nonLeafNodeRowLength = bytesInKey + 4;
+            Page newRoot = bm.createPage(fileTitle, nonLeafNodeRowLength);
             //insert the first row which is just a page id, no key so...
-            byte[] fakeKey = new byte[15];
+            
             ByteBuffer newRootBuff = ByteBuffer.allocate(nonLeafNodeRowLength);
-            newRootBuff.put(fakeKey);
-            newRootBuff.putInt(pageId);
+            newRootBuff.position(bytesInKey);
+            newRootBuff.putInt(nodePageId);
             byte[] byteToInsert = newRootBuff.array();
             newRoot.insertRow(new Row(byteToInsert));
             //also add the second row which is the middleKeyValue alongside the newPageId
             ByteBuffer newRootBuff2 = ByteBuffer.allocate(nonLeafNodeRowLength);
-            newRootBuff2.put(middleKey);
+            newRootBuff2.put(middleRowData, 0, bytesInKey); // first bytesInKey of middleRowData
             newRootBuff2.putInt(newPageId);
             byte[] byteToInsert2 = newRootBuff2.array();
             newRoot.insertRow(new Row(byteToInsert2));
