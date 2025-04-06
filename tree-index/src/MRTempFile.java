@@ -2,7 +2,11 @@
 // should the key length be set in the constructor somehow? (so not fixed)
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 class Main {
 
@@ -49,6 +53,27 @@ class Main {
         }
         searchPath[depthIndex] = currentPid;
         return searchPath;
+    }
+
+    public byte[] getKeyFromString(String keyString) {
+        return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), keyLength);
+    }
+
+    private List<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
+        List<Rid> matches = new ArrayList<>();
+
+        return matches;
+    }
+
+    public Iterator<Rid> search(String keyString) {
+        byte[] key = getKeyFromString(keyString);
+        return internalRangeSearch(key, key).iterator();
+    }
+
+    public Iterator<Rid> rangeSearch(String startKeyString, String endKeyString) {
+        byte[] startKey = getKeyFromString(startKeyString);
+        byte[] endKey = getKeyFromString(endKeyString);
+        return internalRangeSearch(startKey, endKey).iterator();
     }
 
 }
