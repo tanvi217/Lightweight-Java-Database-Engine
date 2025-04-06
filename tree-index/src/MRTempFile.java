@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class Main {
+class Main<K> {
 
     private BufferManager bm;
     private int rootPid;
@@ -55,8 +55,16 @@ class Main {
         return searchPath;
     }
 
-    public byte[] getKeyFromString(String keyString) {
-        return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), keyLength);
+    public byte[] getKeyFromComparable(K callerKey) {
+        if (callerKey instanceof String) {
+            String keyString = (String) callerKey;
+            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), keyLength);
+        } else if (callerKey instanceof Integer) {
+            int keyInt = (Integer) callerKey;
+            return ByteBuffer.allocate(4).putInt(keyInt).array();
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
 
     private List<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
@@ -65,14 +73,14 @@ class Main {
         return matches;
     }
 
-    public Iterator<Rid> search(String keyString) {
-        byte[] key = getKeyFromString(keyString);
+    public Iterator<Rid> search(K callerKey) {
+        byte[] key = getKeyFromComparable(callerKey);
         return internalRangeSearch(key, key).iterator();
     }
 
-    public Iterator<Rid> rangeSearch(String startKeyString, String endKeyString) {
-        byte[] startKey = getKeyFromString(startKeyString);
-        byte[] endKey = getKeyFromString(endKeyString);
+    public Iterator<Rid> rangeSearch(K startKeyString, K endKeyString) {
+        byte[] startKey = getKeyFromComparable(startKeyString);
+        byte[] endKey = getKeyFromComparable(endKeyString);
         return internalRangeSearch(startKey, endKey).iterator();
     }
 
