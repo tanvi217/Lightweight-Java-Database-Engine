@@ -7,6 +7,7 @@ import java.util.Arrays;
 class Main {
 
     private BufferManager bm;
+    private int rootPid;
 
     private int treeDepth;
     private int keyLength;
@@ -36,7 +37,16 @@ class Main {
     }
 
     private int[] getSearchPath(byte[] key) {
-        return null;
+        int[] searchPath = new int[treeDepth];
+        int currentPid = rootPid;
+        int depthIndex = 0;
+        while (depthIndex < treeDepth - 1) {
+            searchPath[depthIndex] = currentPid;
+            currentPid = findInNonLeafPage(key, currentPid);
+            ++depthIndex;
+        }
+        searchPath[depthIndex] = currentPid;
+        return searchPath;
     }
 
 }
