@@ -61,7 +61,7 @@ public class EvanBTreeFunctions {
         //we KNOW we are in a leaf page in this function
         if(leafPage.isFull()){
             //If page is full call handlesplit
-            handlesplit(key);
+            handleSplit(key, rid, pageId, parentPageIds, true);
         }
         //Now we know we can fit the key in, so first create the row we are going to insert eventually
         ByteBuffer b = ByteBuffer.allocate(leafNodeRowLength);
@@ -72,7 +72,7 @@ public class EvanBTreeFunctions {
         Row rowToInsert = new Row(byteToInsert);
         //now we loop to find the proper place to insert
         int i = 1;
-        while(i<leafPage.get_nextRowId()){
+        while(i<leafPage.height()){
             Row currRow = leafPage.getRow(i);
             int comparison = Arrays.compare(key, 0, fixedKeyLength, currRow.data, 0, fixedKeyLength);
             if(comparison<=0){
@@ -84,7 +84,7 @@ public class EvanBTreeFunctions {
         }
         //now i is the place where we want to insert
         Row nextRowToInsert = rowToInsert;
-        while(i < leafPage.get_nextRowId()){
+        while(i < leafPage.height()){
                 //get what's currently at i and save it to be used in the next iteration of the loop
                 Row currRow = leafPage.getRow(i);
                 //modify the row at i with the new information we want there
@@ -98,11 +98,18 @@ public class EvanBTreeFunctions {
         //unpin the page
         bm.unpinPage(pageId);
     }
+
+    private int getIntFromRow(Page nodePage, int rowId, int index){
+        byte[] rowData = nodePage.getRow(rowId).data;
+        return ByteBuffer.wrap(rowData).getInt(index*4);
+    }
     //if isLeaf = True then rid is a "real" rid, if isLeaf=false then ONLY the pageid of rid matters
     private void handleSplit(byte[] key,Rid rid, int pageId, int[] parentPageIds, boolean isLeaf){
         //will have 2 pages pinned throughout this function
         TabularPage pageToSplit = (TabularPage)bm.getPage(pageId, fileTitle);
-        int middleKeyId = pageToSplit.get_nextRowId()/2; //this is the number of rows currently in the page divided by 2
+        int middleKeyId = pageToSplit.height()/2; //this is the number of rows currently in the page divided by 2
+        //save the middleKey itself to use later
+        byte[] middleKey = Arrays.copyOfRange(pageToSplit.getRow(middleKeyId).data, 0, fixedKeyLength);
         int currOldPageRowId = middleKeyId;
         //creation of new page
         int rowLength = -1;
@@ -113,6 +120,7 @@ public class EvanBTreeFunctions {
             rowLength = nonLeafNodeRowLength;
         }
         TabularPage newPage = (TabularPage)bm.createPage(fileTitle, rowLength);
+        int newPageId = newPage.getId();
         //a little optimization which ISN'T implemented could be check if the key to be inserted is in the second half of the page
         //i.e. it is in the new page, if that is the case then we could add it in appropriately in the below loop.
         int comparison = Arrays.compare(key, 0, fixedKeyLength, pageToSplit.getRow(middleKeyId).data, 0, fixedKeyLength);
@@ -124,7 +132,7 @@ public class EvanBTreeFunctions {
         //we KNOW that comparison <0 --> key < middleKey --> where to insert key must be in
         //here we do things as normal
         //first we fill the newPage appropriately
-        while(currOldPageRowId < pageToSplit.get_nextRowId()){
+        while(currOldPageRowId < pageToSplit.height()){
             newPage.insertRow(pageToSplit.getRow(currOldPageRowId));
             currOldPageRowId++;
         }
@@ -134,29 +142,60 @@ public class EvanBTreeFunctions {
         pageToSplit.set_nextRowId(middleKeyId);
         if(isLeaf){
             insertIntoLeafPage(key, rid, newPage.getId(), parentPageIds);
+            //now setting the previous and next pointers
+            //first we get the original ones out
+            int ogPrev = getIntFromRow(pageToSplit, 0, 0);
+            int ogNext = getIntFromRow(pageToSplit, 0, 1);
+            //first put the older previous and newPageId as next in the pageToSplit page
+            ByteBuffer pageToSplitBuff = ByteBuffer.allocate(pageToSplit.get_rowLength());
+            pageToSplitBuff.putInt(ogPrev);
+            pageToSplitBuff.putInt(newPageId);
+            pageToSplit.modifyRow(new Row(pageToSplitBuff.array()), 0);
+            
+            //now put the pageToSplit as previous and the old next as the next pointer
+            ByteBuffer newPageBuff = ByteBuffer.allocate(newPage.get_rowLength());
+            newPageBuff.putInt(pageToSplit.getId());
+            newPageBuff.putInt(ogNext);
+            newPage.modifyRow(new Row(newPageBuff.array()), 0);
+
+            //now previous and next should be properly created/modified.
+            //if we have an internal/nonleaf node we do NOT need to worry about this process.
         }
         else{
             //insertIntoNonLeafPage(key, rid.getPageId(), newPage.getId(), parentPageIds)
         }
+        bm.unpinPage(pageToSplit.getId(), fileTitle);
+        bm.unpinPage(newPage.getId(), fileTitle);
     
-    //now the pages are correctly created, we just need to "push up" the right value to insertIntoNonLeafPage
-    //insertIntoNonLeafPage(key, newPage.getId(), parentPageIds[depth], parentPageIds[]);
-    //insertIntoNonLeafPage(key, newPage.getId(), parentPageIds[parentPageIds.length-1], parentPageIds[]);
+        //now the pages are correctly created, we just need to "push up" the right value to insertIntoNonLeafPage
+        //We NEED TO CHECK IF THIS IS THE ROOT, IF IT IS THEN WE MUST CREATE A NEW NODE TO PUSH UP INTO, and can just manually do it here
+        if(pageId ==rootPid){
+            //this means we are splitting the root, so need to make a new root that looks at this properly
+            TabularPage newRoot = (TabularPage)bm.createPage(fileTitle, nonLeafNodeRowLength);
+            //insert the first row which is just a page id, no key so...
+            byte[] fakeKey = new byte[15];
+            ByteBuffer newRootBuff = ByteBuffer.allocate(nonLeafNodeRowLength);
+            newRootBuff.put(fakeKey);
+            newRootBuff.putInt(pageId);
+            byte[] byteToInsert = newRootBuff.array();
+            newRoot.insertRow(new Row(byteToInsert));
+            //also add the second row which is the middleKeyValue alongside the newPageId
+            ByteBuffer newRootBuff2 = ByteBuffer.allocate(nonLeafNodeRowLength);
+            newRootBuff2.put(middleKey);
+            newRootBuff2.putInt(newPageId);
+            byte[] byteToInsert2 = newRootBuff2.array();
+            newRoot.insertRow(new Row(byteToInsert2));
+            //now the newRoot should be setup as desired so we just need to change the rootPid so we are pointing to the correct root
+            rootPid = newRoot.getId();
+            //and we unpin the new page
+            bm.unpinPage(newRoot.getId(), fileTitle);
+        }
+        //else{
+        //if we aren't creating a new root then we are just adding the value to the next node up which sid one with the below function.
+        //insertIntoNonLeafPage(middleKey, newPage.getId(), parentPageIds[depth], parentPageIds[]);
+        //insertIntoNonLeafPage(middleKey, newPage.getId(), parentPageIds[parentPageIds.length-1], parentPageIds[]);
+        //}
 
-    }
-    /* 
-	Split on middle key
-	Create a new page, and CHANGE nextpageId of current page (maybe change depending on leaf?=true/false, maybe add function
-	Insert key into the correct page
-		If key < middle key go left, otherwise go right
-//maybe change for internal nodes	
-			insertINtoLeafPage(key, rid, correct pageId, parentPageIds) OR insertIntoNonLeafPage(key, pageIdToInsert)
-	insertIntoNonLeafPage(middle key, parentPageIds[appropriate index (if leaf then last index)])
-    */
-
-        
-    private void handlesplit(byte[] key){
-        System.out.println("not done");
-    }
+    }   
 
 }
