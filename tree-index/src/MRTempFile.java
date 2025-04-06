@@ -13,23 +13,25 @@ class Main {
     private int keyLength;
     private String fileTitle;
 
-    private byte[][] splitRow(Page nodePage, int rowId) {
+    private byte[] dataAfterKey(Page nodePage, int rowId) {
         byte[] rowData = nodePage.getRow(rowId).data;
-        byte[] key = Arrays.copyOf(rowData, keyLength);
-        byte[] value = Arrays.copyOfRange(rowData, keyLength, rowData.length);
-        return new byte[][]{ key, value };
+        return Arrays.copyOfRange(rowData, keyLength, rowData.length);
+    }
+
+    private int compareKeyToRow(byte[] key, Page nodePage, int rowId) {
+        byte[] rowData = nodePage.getRow(rowId).data;
+        return Arrays.compare(key, 0, keyLength, rowData, 0, keyLength);
     }
 
     private int findInNonLeafPage(byte[] key, int pageId) {
         Page nodePage = bm.getPage(pageId, fileTitle);
-        byte[] leftPointer = splitRow(nodePage, 0)[1]; // pageId bytes of first row
+        byte[] leftPointer = dataAfterKey(nodePage, 0); // pageId bytes of first row
         int rowId = 1; // start loop at second row
         while (rowId < nodePage.height()) {
-            byte[][] keyValue = splitRow(nodePage, rowId);
-            if (Arrays.compare(key, keyValue[0]) <= 0) { // compare key to current row's key
+            if (compareKeyToRow(key, nodePage, rowId) <= 0) { // compare key to current row's key
                 break;
             }
-            leftPointer = keyValue[1]; // pageId bytes of current row
+            leftPointer = dataAfterKey(nodePage, rowId); // pageId bytes of current row
             ++rowId;
         } // if break is never reached, the loop ends with leftPointer being the pageId of the final row
         bm.unpinPage(pageId, fileTitle);
