@@ -18,14 +18,17 @@ class Main {
         return Arrays.copyOfRange(rowData, keyLength, rowData.length);
     }
 
+    private int compareKeyToRow(byte[] key, Page nodePage, int rowId) {
+        byte[] rowData = nodePage.getRow(rowId).data;
+        return Arrays.compare(key, 0, keyLength, rowData, 0, keyLength);
+    }
+
     private int findInNonLeafPage(byte[] key, int pageId) {
         Page nodePage = bm.getPage(pageId, fileTitle);
         byte[] leftPointer = dataAfterKey(nodePage, 0); // pageId bytes of first row
         int rowId = 1; // start loop at second row
         while (rowId < nodePage.height()) {
-            // byte[][] keyValue = splitRow(nodePage, rowId);
-            byte[] rowData = nodePage.getRow(rowId).data;
-            if (Arrays.compare(key, 0, keyLength, rowData, 0, keyLength) <= 0) { // compare key to current row's key
+            if (compareKeyToRow(key, nodePage, rowId) <= 0) { // compare key to current row's key
                 break;
             }
             leftPointer = dataAfterKey(nodePage, rowId); // pageId bytes of current row
