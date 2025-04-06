@@ -67,21 +67,46 @@ class Main<K> {
         }
     }
 
-    private List<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
-        List<Rid> matches = new ArrayList<>();
+    private int getIntFromRow(Page nodePage, int rowId, int index) {
+        byte[] rowData = nodePage.getRow(rowId).data;
+        return ByteBuffer.wrap(rowData).getInt(index * 4);
+    }
 
+    private List<Rid> getLeafMatches(int leafPid, byte[] startKey, byte[] endKey) {
+        List<Rid> matches = new ArrayList<>();
+        Page leafPage = bm.getPage(leafPid, fileTitle);
+        int pageHeight = leafPage.height();
+        int rowId = 1; // start at second row
+        while (rowId < pageHeight && compareKeyToRow(startKey, leafPage, rowId) < 0) {
+            ++rowId;
+        }
+        while (rowId < pageHeight && compareKeyToRow(endKey, leafPage, rowId) >= 0) {
+            matches.add(new Rid(dataAfterKey(leafPage, rowId)));
+            ++rowId;
+        }
+        int nextLeafPid = getIntFromRow(leafPage, rowId, 1);
+        bm.unpinPage(leafPid, fileTitle);
+        if (rowId == pageHeight) { // if last row still matches, some matches may be in next leaf
+            matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
+        }
         return matches;
+    }
+
+    private Iterator<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
+        List<Rid> matches = new ArrayList<>();
+        int pageId = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
+        return getLeafMatches(pageId, startKey, endKey).iterator();
     }
 
     public Iterator<Rid> search(K callerKey) {
         byte[] key = getKeyFromComparable(callerKey);
-        return internalRangeSearch(key, key).iterator();
+        return internalRangeSearch(key, key);
     }
 
     public Iterator<Rid> rangeSearch(K startKeyString, K endKeyString) {
         byte[] startKey = getKeyFromComparable(startKeyString);
         byte[] endKey = getKeyFromComparable(endKeyString);
-        return internalRangeSearch(startKey, endKey).iterator();
+        return internalRangeSearch(startKey, endKey);
     }
 
 }
