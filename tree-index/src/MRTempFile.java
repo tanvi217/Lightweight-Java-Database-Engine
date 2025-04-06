@@ -132,14 +132,17 @@ class MRTempFile<K> {
         return internalRangeSearch(startKey, endKey);
     }
 
-    private void handleSplit() {
-
+    private void handleSplit(byte[] key, Row newRow, int nodePageId, int[] searchPath) {
+        Page targetPage = bm.getPage(nodePageId, fileTitle);
+        
     }
 
     private void insertIntoNode(byte[] key, Row newRow, int nodePageId, int[] searchPath) {
         Page targetPage = bm.getPage(nodePageId, fileTitle);
         if (targetPage.isFull()) {
-            handleSplit();
+            bm.unpinPage(nodePageId, fileTitle);
+            handleSplit(key, newRow, nodePageId, searchPath);
+            return;
         }
         int rowId = 1;
         while (rowId < targetPage.height()) {
