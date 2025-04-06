@@ -22,7 +22,7 @@ class MRTempFile<K> {
     private int createNodePage(int depthIndex) {
         boolean isLeaf = depthIndex == treeDepth - 1;
         int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
-        int pageId = bm.createPage(fileTitle, bytesInRow);
+        int pageId = bm.createPage(fileTitle, bytesInRow).getId();
         if (depthIndex >= pinDepth) { // if depthIndex < pinDepth keep page pinned
             bm.unpinPage(pageId, fileTitle);
         }
@@ -69,12 +69,12 @@ class MRTempFile<K> {
         if (callerKey instanceof String) {
             String keyString = (String) callerKey;
             return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), bytesInKey);
-        } else if (callerKey instanceof Integer) {
+        }
+        if (callerKey instanceof Integer) {
             int keyInt = (Integer) callerKey;
             return ByteBuffer.allocate(4).putInt(keyInt).array();
-        } else {
-            throw new IllegalArgumentException();
         }
+        return ByteBuffer.allocate(4).putInt(callerKey.hashCode()).array();
     }
 
     private int getIntFromRow(Page nodePage, int rowId, int index) {
@@ -134,7 +134,89 @@ class MRTempFile<K> {
 
     private void handleSplit(byte[] key, Row newRow, int nodePageId, int[] searchPath) {
         Page targetPage = bm.getPage(nodePageId, fileTitle);
-        
+        int middleRowId = targetPage.height() / 2; //this is the number of rows currently in the page divided by 2
+        //save the middleKey itself to use later
+        byte[] middleRowData = targetPage.getRow(middleRowId).data;
+        int currOldPageRowId = middleRowId;
+        //creation of new page
+        boolean isLeaf = nodePageId == searchPath[treeDepth - 1];
+        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4);
+        Page newPage = bm.createPage(fileTitle, bytesInRow);
+        int newPageId = newPage.getId();
+        //a little optimization which ISN'T implemented could be check if the key to be inserted is in the second half of the page
+        //i.e. it is in the new page, if that is the case then we could add it in appropriately in the below loop.
+        int comparison = compareKeyToRow(key, targetPage, middleRowId); // key to middleKey
+        //may want to change to >, but i think this is correct
+        /*if(comparison>=0){
+            //now we continue on with optimized portion, a lot of copy and pasting
+        }*/
+    
+        //we KNOW that comparison <0 --> key < middleKey --> where to insert key must be in
+        //here we do things as normal
+        //first we fill the newPage appropriately
+        while(currOldPageRowId < targetPage.height()){
+            newPage.insertRow(targetPage.getRow(currOldPageRowId));
+            currOldPageRowId++;
+        }
+        //now the new page is filled properly, and we insert the key into the appropriate spot in pageToSplit aka oldPage
+        //we also need to "delete" the moved entries from pageToSplit which is the same as setting newRowId appropriately
+        //don't need +1 because middleKey in right page
+        targetPage.setHeight(middleRowId);
+        if(isLeaf){
+            insertIntoLeafPage(key, rid, newPage.getId(), parentPageIds);
+            //now setting the previous and next pointers
+            //first we get the original ones out
+            int ogPrev = getIntFromRow(targetPage, 0, 0);
+            int ogNext = getIntFromRow(targetPage, 0, 1);
+            //first put the older previous and newPageId as next in the pageToSplit page
+            ByteBuffer pageToSplitBuff = ByteBuffer.allocate(targetPage.get_rowLength());
+            pageToSplitBuff.putInt(ogPrev);
+            pageToSplitBuff.putInt(newPageId);
+            targetPage.modifyRow(new Row(pageToSplitBuff.array()), 0);
+            
+            //now put the pageToSplit as previous and the old next as the next pointer
+            ByteBuffer newPageBuff = ByteBuffer.allocate(newPage.get_rowLength());
+            newPageBuff.putInt(targetPage.getId());
+            newPageBuff.putInt(ogNext);
+            newPage.modifyRow(new Row(newPageBuff.array()), 0);
+
+            //now previous and next should be properly created/modified.
+            //if we have an internal/nonleaf node we do NOT need to worry about this process.
+        }
+        else{
+            //insertIntoNonLeafPage(key, rid.getPageId(), newPage.getId(), parentPageIds)
+        }
+        bm.unpinPage(targetPage.getId(), fileTitle);
+        bm.unpinPage(newPage.getId(), fileTitle);
+    
+        //now the pages are correctly created, we just need to "push up" the right value to insertIntoNonLeafPage
+        //We NEED TO CHECK IF THIS IS THE ROOT, IF IT IS THEN WE MUST CREATE A NEW NODE TO PUSH UP INTO, and can just manually do it here
+        if(pageId ==rootPid){
+            //this means we are splitting the root, so need to make a new root that looks at this properly
+            TabularPage newRoot = (TabularPage)bm.createPage(fileTitle, nonLeafNodeRowLength);
+            //insert the first row which is just a page id, no key so...
+            byte[] fakeKey = new byte[15];
+            ByteBuffer newRootBuff = ByteBuffer.allocate(nonLeafNodeRowLength);
+            newRootBuff.put(fakeKey);
+            newRootBuff.putInt(pageId);
+            byte[] byteToInsert = newRootBuff.array();
+            newRoot.insertRow(new Row(byteToInsert));
+            //also add the second row which is the middleKeyValue alongside the newPageId
+            ByteBuffer newRootBuff2 = ByteBuffer.allocate(nonLeafNodeRowLength);
+            newRootBuff2.put(middleKey);
+            newRootBuff2.putInt(newPageId);
+            byte[] byteToInsert2 = newRootBuff2.array();
+            newRoot.insertRow(new Row(byteToInsert2));
+            //now the newRoot should be setup as desired so we just need to change the rootPid so we are pointing to the correct root
+            rootPid = newRoot.getId();
+            //and we unpin the new page
+            bm.unpinPage(newRoot.getId(), fileTitle);
+        }
+        //else{
+        //if we aren't creating a new root then we are just adding the value to the next node up which sid one with the below function.
+        //insertIntoNonLeafPage(middleKey, newPage.getId(), parentPageIds[depth], parentPageIds[]);
+        //insertIntoNonLeafPage(middleKey, newPage.getId(), parentPageIds[parentPageIds.length-1], parentPageIds[]);
+        //}
     }
 
     private void insertIntoNode(byte[] key, Row newRow, int nodePageId, int[] searchPath) {
@@ -159,7 +241,7 @@ class MRTempFile<K> {
             ++rowId;
         }
         targetPage.insertRow(rowToInsert);
-        bm.unpinPage(targetPage, fileTitle);
+        bm.unpinPage(targetPage.getId(), fileTitle);
     }
 
     public void insert(K callerKey, Rid rid) {

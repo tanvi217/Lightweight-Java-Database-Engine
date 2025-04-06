@@ -16,6 +16,10 @@ public interface Page {
      */
     int insertRow(Row row);
 
+    void modifyRow(Row newRow, int rowId);
+
+    void setHeight(int height);
+
     /**
      * Check if the page is full.
      *
