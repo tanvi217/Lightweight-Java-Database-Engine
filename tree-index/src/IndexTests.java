@@ -5,8 +5,8 @@ import java.util.List;
 
 public class IndexTests {
 
-    public static BufferBTree<String> CreateIndex(BufferManager bm, int bytesInKey, int attributeIndex, int pinnedPageCount) {
-        BufferBTree<String> btree = new BufferBTree<String>(bm, bytesInKey, pinnedPageCount);
+    public static BufferBTree<String> CreateIndex(BufferManager bm, int bytesInKey, int attS, int attL, int pinnedPageDepth, boolean debugPrinting) {
+        BufferBTree<String> btree = new BufferBTree<String>(bm, bytesInKey, pinnedPageDepth, debugPrinting);
         int pageId = 0;
 
         while (true) {
@@ -16,7 +16,7 @@ public class IndexTests {
                 for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
                         Row row = page.getRow(rowId);
-                        String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
+                        String key = new String(row.getAttribute(attS, attL), StandardCharsets.UTF_8).trim();
                         btree.insert(key, new Rid(pageId, rowId));
                     }
                     catch (Exception ex) { }
@@ -32,12 +32,12 @@ public class IndexTests {
 
         bm.force();
 
-        System.out.println("Built index for attributeIndex: " + attributeIndex);
+        System.out.println("Built index for attribute starting at byte: " + attS);
         return btree;
     }
 
-    public static void verifyIndex(BufferBTree<String> bTreeIndex, BufferManager bm, String key, int attributeIndex) {
-        System.out.println("\nVerifying index for key: " + key + " at attribute index: " + attributeIndex);
+    public static void verifyIndex(BufferBTree<String> bTreeIndex, BufferManager bm, String key, int attS, int attL) {
+        System.out.println("\nVerifying index for key: " + key + " at attribute  starting at byte: " + attS);
         Iterator<Rid> rids = bTreeIndex.search(key);
 
         if (!rids.hasNext()) {
@@ -48,7 +48,7 @@ public class IndexTests {
             Rid rid = rids.next();
             Page page = bm.getPage(rid.getPageId());
             Row row = page.getRow(rid.getSlotId());
-            String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
+            String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
             if (!foundKeyValue.isEmpty() && !foundKeyValue.equals(key)) {
                 System.err.println("Couldn't find key: Search key: " + key + ", Found key: " + foundKeyValue +
@@ -61,8 +61,8 @@ public class IndexTests {
         }
     }
 
-    public static void verifyRange(BufferBTree<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
-        System.out.println("\nVerifying index for range: " + startKey + ", " + endKey + " at attribute index: " + attributeIndex);
+    public static void verifyRange(BufferBTree<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attS, int attL) {
+        System.out.println("\nVerifying index for range: " + startKey + ", " + endKey + " at attribute  starting at byte: " + attS);
 
         Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
 
@@ -74,7 +74,7 @@ public class IndexTests {
             Rid rid = rids.next();
             Page page = bm.getPage(rid.getPageId());
             Row row = page.getRow(rid.getSlotId());
-            String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
+            String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
             if (!foundKeyValue.isEmpty() && (foundKeyValue.compareToIgnoreCase(startKey) < 0 || foundKeyValue.compareToIgnoreCase(endKey) > 0)) {
                 System.err.println("Found key out of given range: (startKey, endKey): (" + startKey + ", " + endKey 
@@ -88,7 +88,7 @@ public class IndexTests {
         }
     }
 
-    public static void compareRangeSearch(BufferBTree<String> bTreeIndex, BufferManager bm, String[][] ranges, int attributeIndex, int totalRowsInTable) {
+    public static void compareRangeSearch(BufferBTree<String> bTreeIndex, BufferManager bm, String[][] ranges, int attS, int attL, int totalRowsInTable) {
         List<Double> selectivities = new ArrayList<>();
         List<Double> scanTimes = new ArrayList<>();
         List<Double> indexTimes = new ArrayList<>();
@@ -100,7 +100,7 @@ public class IndexTests {
 
             // Sequential scan
             long startTime = System.nanoTime();
-            List<Row> scanResults = scanTable(bm, attributeIndex, startKey.trim(), endKey.trim());
+            List<Row> scanResults = scanTable(bm, attS, attL, startKey.trim(), endKey.trim());
             long scanTime = System.nanoTime() - startTime;
             scanTimes.add(scanTime / 1e6); // msec
 
@@ -109,7 +109,7 @@ public class IndexTests {
             // Index range query
             startTime = System.nanoTime();
             Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
-            List<Row> indexResults = fetchRows(bm, rids, attributeIndex);
+            List<Row> indexResults = fetchRows(bm, rids, attS, attL);
             long indexTime = System.nanoTime() - startTime;
             indexTimes.add(indexTime / 1e6); // msec
 
@@ -124,7 +124,7 @@ public class IndexTests {
         plotResults(selectivities, scanTimes, indexTimes);
     }
 
-    private static List<Row> scanTable(BufferManager bm, int attributeIndex, String startKey, String endKey) {
+    private static List<Row> scanTable(BufferManager bm, int attS, int attL, String startKey, String endKey) {
         List<Row> results = new ArrayList<>();
         int pageId = 0;
 
@@ -135,9 +135,9 @@ public class IndexTests {
                 for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
                         Row row = page.getRow(rowId);
-                        String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
+                        String key = new String(row.getAttribute(attS, attL), StandardCharsets.UTF_8).trim();
 
-                        if (attributeIndex == Constants.MOVIE_ID_INDEX) {
+                        if (attS == Constants.MOVIE_ID_START_BYTE) {
                             key = key.substring(0, Constants.MOVIE_ID_SIZE).trim();
                         }
 
@@ -160,7 +160,7 @@ public class IndexTests {
         return results;
     }
 
-    private static List<Row> fetchRows(BufferManager bm, Iterator<Rid> rids, int attributeIndex) {
+    private static List<Row> fetchRows(BufferManager bm, Iterator<Rid> rids, int attS, int attL) {
         List<Row> results = new ArrayList<>();
 
         while (rids.hasNext()) {
@@ -170,9 +170,9 @@ public class IndexTests {
                 Page page = bm.getPage(rid.getPageId());
                 Row row = page.getRow(rid.getSlotId());
 
-                String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
+                String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
-                if (attributeIndex == Constants.MOVIE_ID_INDEX) {
+                if (attS == Constants.MOVIE_ID_START_BYTE) {
                     foundKeyValue = foundKeyValue.substring(0, Constants.MOVIE_ID_SIZE).trim();
                 }
 

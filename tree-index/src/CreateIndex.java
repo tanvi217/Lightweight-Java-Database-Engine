@@ -10,22 +10,22 @@ public class CreateIndex {
         int totalRowsInTable = loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
 
         // TestC1 - create index on title
-        BufferBTree<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_INDEX, 0);
+        BufferBTree<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_START_BYTE, 30, 0, true);
 
         // TestC3 - Verify index on title
-        IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Coney Island", Constants.TITLE_INDEX);
+        IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Coney Island", Constants.TITLE_START_BYTE, 30);
 
         // TestC4 - Verify index on title
-        IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_INDEX);
+        IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_START_BYTE, 30);
 
         // TestC2 - create index on movieId
-        BufferBTree<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 0);
+        BufferBTree<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 0, true);
 
         // TestC3 - Verify index on movieId
-        IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_INDEX);
+        IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_START_BYTE, 9);
 
         // TestC4 - Verify index on movieId
-        IndexTests.verifyRange(titleIndexBTree, bufferManager, "tt0000137", "tt0000147", Constants.MOVIE_ID_INDEX);
+        IndexTests.verifyRange(titleIndexBTree, bufferManager, "tt0000137", "tt0000147", Constants.MOVIE_ID_START_BYTE, 9);
 
         // TestP1 - Range query comparision on title
         String[][] rangesMovieTitle = {
@@ -34,7 +34,7 @@ public class CreateIndex {
             {"A Hard Wash", "Grandes manoeuvres"}
         };
 
-        IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, 1, totalRowsInTable);
+        IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, 1, 30, totalRowsInTable);
 
         // TestP2 - Range query comparision on Id
         String[][] rangesIds = {
@@ -43,15 +43,15 @@ public class CreateIndex {
             {"tt0000001", "tt0000078"}
         };
 
-        IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, totalRowsInTable);
+        IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, 9, totalRowsInTable);
 
         // TestP3 - Keeping initial pages pinned
-        BufferBTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_INDEX, 10);
-        BufferBTree<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 10);
+        BufferBTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_START_BYTE, 30, 10, true);
+        BufferBTree<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 10, true);
 
-        IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, 1, totalRowsInTable);
+        IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, 1, 30, totalRowsInTable);
 
-        IndexTests.compareRangeSearch(movieIdIndexBTreePinned, bufferManager, rangesIds, 0, totalRowsInTable);
+        IndexTests.compareRangeSearch(movieIdIndexBTreePinned, bufferManager, rangesIds, 0, 9, totalRowsInTable);
     }
 
     public static int loadDatasetSequentially(BufferManager bf, String csvFile) {
