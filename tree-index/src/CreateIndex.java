@@ -19,7 +19,7 @@ public class CreateIndex {
         IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_INDEX);
 
         // TestC2 - create index on movieId
-        MRTempFile<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 20, Constants.MOVIE_ID_INDEX, 0);
+        MRTempFile<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 0);
 
         // TestC3 - Verify index on movieId
         IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_INDEX);

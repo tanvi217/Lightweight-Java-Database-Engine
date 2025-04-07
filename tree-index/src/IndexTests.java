@@ -64,7 +64,7 @@ public class IndexTests {
     public static void verifyRange(MRTempFile<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
         System.out.println("\nVerifying index for range: " + startKey + ", " + endKey + " at attribute index: " + attributeIndex);
 
-        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
+        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
 
         if (!rids.hasNext()) {
             System.out.println("Couldn't find entries in the range: " + startKey + ", " + endKey);
@@ -76,10 +76,10 @@ public class IndexTests {
             Row row = page.getRow(rid.getSlotId());
             String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
 
-            // if (foundKeyValue.compareTo(startKey) < 0 || foundKeyValue.compareTo(endKey) > 0) {
-            //     System.err.println("Found key out of given range: (startKey, endKey): (" + startKey + ", " + endKey 
-            //         + "), Found key: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
-            // }
+            if (!foundKeyValue.isEmpty() && (foundKeyValue.compareToIgnoreCase(startKey) < 0 || foundKeyValue.compareToIgnoreCase(endKey) > 0)) {
+                System.err.println("Found key out of given range: (startKey, endKey): (" + startKey + ", " + endKey 
+                    + "), Found key: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
+            }
             if (!foundKeyValue.isEmpty()) {
                 System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
@@ -100,14 +100,16 @@ public class IndexTests {
 
             // Sequential scan
             long startTime = System.nanoTime();
-            List<Row> scanResults = scanTable(bm, attributeIndex, startKey, endKey);
+            List<Row> scanResults = scanTable(bm, attributeIndex, startKey.trim(), endKey.trim());
             long scanTime = System.nanoTime() - startTime;
             scanTimes.add(scanTime / 1e6); // msec
 
+            System.out.println("Sequential scan took " + scanTime / 1e6 + " ms, found " + scanResults.size() + " rows.");
+
             // Index range query
             startTime = System.nanoTime();
-            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
-            List<Row> indexResults = fetchRows(bm, rids);
+            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
+            List<Row> indexResults = fetchRows(bm, rids, attributeIndex);
             long indexTime = System.nanoTime() - startTime;
             indexTimes.add(indexTime / 1e6); // msec
 
@@ -115,8 +117,7 @@ public class IndexTests {
             double selectivity = (double) scanResults.size() / totalRowsInTable;
             selectivities.add(selectivity);
 
-            System.out.println("Range [" + startKey + ", " + endKey + "]: " +
-                "Scan rows = " + scanResults.size() + ", Index rows = " + indexResults.size());
+            System.out.println("Index scan took " + indexTime / 1e6 + " ms, found " + indexResults.size() + " rows.");
         }
 
         // Output results
@@ -131,12 +132,17 @@ public class IndexTests {
             try {
                 Page page = bm.getPage(pageId);
 
-                for (int rowId = 0; rowId < Constants.MAX_PAGE_ROWS; rowId++) {
+                for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
                         Row row = page.getRow(rowId);
                         String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
 
-                        if (key.compareTo(startKey) >= 0 && key.compareTo(endKey) <= 0) {
+                        if (attributeIndex == Constants.MOVIE_ID_INDEX) {
+                            key = key.substring(0, Constants.MOVIE_ID_SIZE).trim();
+                        }
+
+                        if (key.compareToIgnoreCase(startKey) >= 0 && key.compareToIgnoreCase(endKey) <= 0) {
+                            System.out.println("Found: " + key + " at page " + pageId + ", slot " + rowId);
                             results.add(row);
                         }
                     }
@@ -154,14 +160,31 @@ public class IndexTests {
         return results;
     }
 
-    private static List<Row> fetchRows(BufferManager bm, Iterator<Rid> rids) {
+    private static List<Row> fetchRows(BufferManager bm, Iterator<Rid> rids, int attributeIndex) {
         List<Row> results = new ArrayList<>();
 
         while (rids.hasNext()) {
             Rid rid = rids.next();
-            Page page = bm.getPage(rid.getPageId());
-            Row row = page.getRow(rid.getSlotId());
-            results.add(row);
+
+            try {
+                Page page = bm.getPage(rid.getPageId());
+                Row row = page.getRow(rid.getSlotId());
+
+                String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
+
+                if (attributeIndex == Constants.MOVIE_ID_INDEX) {
+                    foundKeyValue = foundKeyValue.substring(0, Constants.MOVIE_ID_SIZE).trim();
+                }
+
+                // if (!foundKeyValue.isEmpty()) {
+                //     results.add(row);
+                // }
+
+                results.add(row);
+            } catch (Exception e) {
+                continue;
+            }
+
             bm.unpinPage(rid.getPageId());
         }
 
