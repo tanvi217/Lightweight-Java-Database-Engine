@@ -5,8 +5,8 @@ import java.util.List;
 
 public class IndexTests {
 
-    public static BTreeIndexBM CreateIndex(BufferManager bm, int attributeIndex) {
-        BTreeIndexBM btree = new BTreeIndexBM(bm);
+    public static MRTempFile<String> CreateIndex(BufferManager bm, int attributeIndex, int pinnedPageCount) {
+        MRTempFile<String> btree = new MRTempFile<String>(bm, 4000, pinnedPageCount);
         int pageId = 0;
 
         while (true) {
@@ -16,7 +16,8 @@ public class IndexTests {
                 for (int rowId = 0; rowId < Constants.MAX_PAGE_ROWS; rowId++) {
                     try {
                         Row row = page.getRow(rowId);
-                        btree.insert(row.getAttribute(attributeIndex), new Rid(pageId, rowId));
+                        String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
+                        btree.insert(key, new Rid(pageId, rowId));
                     }
                     catch (Exception ex) { }
                 }
@@ -35,7 +36,7 @@ public class IndexTests {
         return btree;
     }
 
-    public static void verifyIndex(BTreeIndexBM bTreeIndex, BufferManager bm, String key, int attributeIndex) {
+    public static void verifyIndex(MRTempFile<String> bTreeIndex, BufferManager bm, String key, int attributeIndex) {
         Iterator<Rid> rids = bTreeIndex.search(key);
 
         if (!rids.hasNext()) {
@@ -59,9 +60,8 @@ public class IndexTests {
         }
     }
 
-    /* TODO: Implement rangeSearch in BPlusTree */
-    public static void verifyRange(BTreeIndexBM bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
-        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.getBytes(), endKey);
+    public static void verifyRange(MRTempFile<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
+        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
 
         if (!rids.hasNext()) {
             System.out.println("Couldn't find entries in the range: " + startKey + ", " + endKey);
@@ -84,7 +84,7 @@ public class IndexTests {
         }
     }
 
-    public static void compareRangeSearch(BTreeIndexBM bTreeIndex, BufferManager bm, String[][] ranges, int attributeIndex, int totalRowsInTable) {
+    public static void compareRangeSearch(MRTempFile<String> bTreeIndex, BufferManager bm, String[][] ranges, int attributeIndex, int totalRowsInTable) {
         List<Double> selectivities = new ArrayList<>();
         List<Double> scanTimes = new ArrayList<>();
         List<Double> indexTimes = new ArrayList<>();
@@ -101,7 +101,7 @@ public class IndexTests {
 
             // Index range query
             startTime = System.nanoTime();
-            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.getBytes(), endKey);
+            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
             List<Row> indexResults = fetchRows(bm, rids);
             long indexTime = System.nanoTime() - startTime;
             indexTimes.add(indexTime / 1e6); // msec
