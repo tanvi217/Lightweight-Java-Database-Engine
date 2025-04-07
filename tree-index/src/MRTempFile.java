@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class MRTempFile<K> {
+class MRTempFile<K extends Comparable<K>> implements BTree<K> {
 
     private static int numInstances = 0; // used for creating a unique fileTitle for each new BTree
     private BufferManager bm;
@@ -166,7 +166,7 @@ class MRTempFile<K> {
             ++rowId;
         }
         // if last row still matches (i.e. rowId == leaf.height()), some matches may be in next leaf
-        int nextLeafPid = rowId == leaf.height() ? getIntFromRow(leafPage, 0, 1) : -2; // if value from row is -1 then we have reached the end of leaf pages. -2 if we did finish searching and don't need a next page ID
+        int nextLeafPid = rowId == leaf.height() ? getIntFromRow(leaf, 0, 1) : -2; // if value from row is -1 then we have reached the end of leaf pages. -2 if we did finish searching and don't need a next page ID
         bm.unpinPage(leafPid, fileTitle);
         if (nextLeafPid >= 0) {
             matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
@@ -190,7 +190,7 @@ class MRTempFile<K> {
         int targetPid = searchPath[depthIndex];
         Page target = bm.getPage(targetPid, fileTitle);
         int middleRowId = target.height() / 2; // this is the number of rows currently in the page divided by 2
-        byte[] middleRowData = targetPage.getRow(middleRowId).data;
+        byte[] middleRowData = target.getRow(middleRowId).data;
         byte[] middleKey = Arrays.copyOf(middleRowData, bytesInKey); // save the middleKey itself to use later
         boolean isLeaf = targetPid == searchPath[treeDepth - 1];
         int siblingPid = createNewSibling(targetPid, depthIndex);
@@ -235,8 +235,8 @@ class MRTempFile<K> {
             leftPointerRowData.position(bytesInKey);
             leftPointerRowData.putInt(targetPid);
             Row leftPointerRow = new Row(leftPointerRowData.array());
-            newRoot.insertRow(leftPointerRow);
-            newRoot.insertRow(pointerRow);
+            root.insertRow(leftPointerRow);
+            root.insertRow(pointerRow);
             bm.unpinPage(rootPid, fileTitle);
         } else {
             insertAlongPath(middleKey, pointerRow, searchPath, depthIndex - 1); // no root split, just insert into next level up the path
