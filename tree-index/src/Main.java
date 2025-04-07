@@ -3,15 +3,21 @@ public class Main {
 
     public static void main(String[] args) {
         BufferManager bm = new LRUBufferManager();
-        MRTempFile<Integer> tree = new MRTempFile<>(bm, 4);
+        BTree<Integer> tree = new MRTempFile<Integer>(bm, 4);
         for (int i = 0; i < 20000; ++i) {
-            tree.insert(i, new Rid(1, 2));
+            tree.insert(i, new Rid(1, i));
         }
         System.out.println(tree);
-        Iterator<Rid> itr = tree.search(2300);
+        Iterator<Rid> itr = tree.rangeSearch(18000, 18002);
+        int j = 0;
         while (itr.hasNext()) {
-            System.out.println(itr.next());
+            Rid next = itr.next();
+            if (j < 10) {
+                System.out.println(next);
+            }
+            ++j;
         }
+        System.out.println("Number of matches: " + j);
     }
 
 }
