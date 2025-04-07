@@ -12,8 +12,8 @@ class MRTempFile<K> {
 
     private static int numInstances = 0;
     private BufferManager bm;
+    
     private int rootPid;
-
     private int treeDepth;
     private int bytesInKey;
     private String fileTitle;
