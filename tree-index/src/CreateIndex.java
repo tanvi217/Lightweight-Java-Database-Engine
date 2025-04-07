@@ -68,6 +68,10 @@ public class CreateIndex {
             int skippedMovies = 0;
 
             while (curRow != null) {
+
+                if (rowsProcessed == 5000) {
+                    break;
+                }
                 
                 if (currentPage.isFull()) {
                     bf.unpinPage(currentPage.getId());
