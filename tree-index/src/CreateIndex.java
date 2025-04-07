@@ -47,7 +47,6 @@ public class CreateIndex {
             // TestP1 - Range query comparision on title
             String[][] rangesMovieTitle = {
                 {"Above the Limit", "Above the Speedway"},
-                {"The Haunted House", "The Sign of the Cross"},
                 {"A Hard Wash", "Awakening of Rip"},
                 {"A Hard Wash", "Conjuring"},                
             };
