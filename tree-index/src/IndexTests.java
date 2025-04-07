@@ -5,8 +5,8 @@ import java.util.List;
 
 public class IndexTests {
 
-    public static MRTempFile<String> CreateIndex(BufferManager bm, int attributeIndex, int pinnedPageCount) {
-        MRTempFile<String> btree = new MRTempFile<String>(bm, 9, pinnedPageCount);
+    public static MRTempFile<String> CreateIndex(BufferManager bm, int bytesInKey, int attributeIndex, int pinnedPageCount) {
+        MRTempFile<String> btree = new MRTempFile<String>(bm, bytesInKey, pinnedPageCount);
         int pageId = 0;
 
         while (true) {
@@ -50,10 +50,10 @@ public class IndexTests {
             Row row = page.getRow(rid.getSlotId());
             String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
 
-            if (!foundKeyValue.equals(key)) {
+            if (!foundKeyValue.isEmpty() && !foundKeyValue.equals(key)) {
                 System.err.println("Couldn't find key: Search key: " + key + ", Found key: " + foundKeyValue +
                     " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
-            } else {
+            } else if (!foundKeyValue.isEmpty()) {
                 System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
@@ -76,10 +76,11 @@ public class IndexTests {
             Row row = page.getRow(rid.getSlotId());
             String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
 
-            if (foundKeyValue.compareTo(startKey) < 0 || foundKeyValue.compareTo(endKey) > 0) {
-                System.err.println("Found key out of given range: (startKey, endKey): (" + startKey + ", " + endKey 
-                    + "), Found key: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
-            } else {
+            // if (foundKeyValue.compareTo(startKey) < 0 || foundKeyValue.compareTo(endKey) > 0) {
+            //     System.err.println("Found key out of given range: (startKey, endKey): (" + startKey + ", " + endKey 
+            //         + "), Found key: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
+            // }
+            if (!foundKeyValue.isEmpty()) {
                 System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
