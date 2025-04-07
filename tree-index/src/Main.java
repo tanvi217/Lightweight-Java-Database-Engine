@@ -3,7 +3,7 @@ public class Main {
 
     public static void main(String[] args) {
         BufferManager bm = new LRUBufferManager();
-        BTree<Integer> tree = new MRTempFile<Integer>(bm, 6, 0, true);
+        BTree<Integer> tree = new BufferBTree<Integer>(bm, 6, 0, true);
         for (int i = 0; i < 100000; ++i) {
             tree.insert(i, new Rid(1, i));
         }

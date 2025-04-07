@@ -10,7 +10,7 @@ public class CreateIndex {
         int totalRowsInTable = loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
 
         // TestC1 - create index on title
-        MRTempFile<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_INDEX, 0);
+        BufferBTree<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_INDEX, 0);
 
         // TestC3 - Verify index on title
         IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Coney Island", Constants.TITLE_INDEX);
@@ -19,7 +19,7 @@ public class CreateIndex {
         IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_INDEX);
 
         // TestC2 - create index on movieId
-        MRTempFile<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 0);
+        BufferBTree<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 0);
 
         // TestC3 - Verify index on movieId
         IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_INDEX);
@@ -46,8 +46,8 @@ public class CreateIndex {
         IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, totalRowsInTable);
 
         // TestP3 - Keeping initial pages pinned
-        MRTempFile<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_INDEX, 10);
-        MRTempFile<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 10);
+        BufferBTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_INDEX, 10);
+        BufferBTree<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_INDEX, 10);
 
         IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, 1, totalRowsInTable);
 
