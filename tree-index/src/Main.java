@@ -3,16 +3,16 @@ public class Main {
 
     public static void main(String[] args) {
         BufferManager bm = new LRUBufferManager();
-        BTree<Integer> tree = new MRTempFile<Integer>(bm, 4);
-        for (int i = 0; i < 20000; ++i) {
-            tree.insert(i, new Rid(1, i));
+        BTree<String> tree = new MRTempFile<String>(bm, 6, 0, true);
+        for (int i = 0; i < 100000; ++i) {
+            tree.insert(String.valueOf(i), new Rid(1, i));
         }
         System.out.println(tree);
-        Iterator<Rid> itr = tree.rangeSearch(18000, 18002);
+        Iterator<Rid> itr = tree.rangeSearch("6", "604");
         int j = 0;
         while (itr.hasNext()) {
             Rid next = itr.next();
-            if (j < 10) {
+            if (j < 5) {
                 System.out.println(next);
             }
             ++j;

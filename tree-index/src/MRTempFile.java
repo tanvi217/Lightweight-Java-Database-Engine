@@ -18,11 +18,13 @@ class MRTempFile<K extends Comparable<K>> implements BTree<K> {
     private int bytesInKey; // number of bytes in search key
     private String fileTitle;
     private int pinDepth; // unused for now
+    private boolean debugPrinting;
 
     public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth, boolean debugPrinting) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
         this.pinDepth = pinDepth;
+        this.debugPrinting = debugPrinting;
         treeDepth = 0;
         fileTitle = "B-plus-tree-" + (++numInstances);
         createNewRoot(); // sets treeDepth to 1 and rootPid to correct page ID
@@ -161,9 +163,16 @@ class MRTempFile<K extends Comparable<K>> implements BTree<K> {
         while (rowId < leaf.height() && compareKeyToRow(startKey, leaf, rowId) > 0) {
             ++rowId;
         }
+        if (debugPrinting) {
+            System.out.println("First match found at row " + rowId + " of page " + leafPid);
+        }
         while (rowId < leaf.height() && compareKeyToRow(endKey, leaf, rowId) >= 0) {
             matches.add(new Rid(dataAfterKey(leaf, rowId))); // passes byte array of Rid data directly to constructor
             ++rowId;
+        }
+        if (debugPrinting) {
+            System.out.println(" Last match found at row " + (rowId - 1) + " of page " + leafPid);
+            System.out.println(" - Total number of rows was: " + leaf.height());
         }
         // if last row still matches (i.e. rowId == leaf.height()), some matches may be in next leaf
         int nextLeafPid = rowId == leaf.height() ? getIntFromRow(leaf, 0, 1) : -2; // if value from row is -1 then we have reached the end of leaf pages. -2 if we did finish searching and don't need a next page ID
@@ -189,10 +198,16 @@ class MRTempFile<K extends Comparable<K>> implements BTree<K> {
     private void splitAndInsertAlongPath(byte[] key, Row newRow, int[] searchPath, int depthIndex) {
         int targetPid = searchPath[depthIndex];
         Page target = bm.getPage(targetPid, fileTitle);
+        if (debugPrinting && depthIndex < treeDepth - 1) {
+            System.out.println("Splitting Non-Leaf Node: " + target);
+            for (int i = 0; i < treeDepth; ++i) {
+                System.out.print(searchPath[i] + ", ");
+            }
+            System.out.println("<- Search Path Page IDs (leftmost is root)");
+        }
         int middleRowId = target.height() / 2; // this is the number of rows currently in the page divided by 2
         byte[] middleRowData = target.getRow(middleRowId).data;
         byte[] middleKey = Arrays.copyOf(middleRowData, bytesInKey); // save the middleKey itself to use later
-        boolean isLeaf = targetPid == searchPath[treeDepth - 1];
         int siblingPid = createNewSibling(targetPid, depthIndex);
         //a little optimization which ISN'T implemented could be check if the key to be inserted is in the second half of the page
         //i.e. it is in the new page, if that is the case then we could add it in appropriately in the below loop.
