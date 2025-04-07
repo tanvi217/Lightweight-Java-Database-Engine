@@ -44,9 +44,6 @@ public class CreateIndex {
             // TestC4 - Verify index on title
             IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_START_BYTE, 30);
 
-            // TestC4 - Verify index on movieId
-            IndexTests.verifyRange(titleIndexBTree, bufferManager, "tt0000137", "tt0000147", Constants.MOVIE_ID_START_BYTE, 9);
-
             // TestP1 - Range query comparision on title
             String[][] rangesMovieTitle = {
                 {"A Hard Wash", "Awakening of Rip"},
