@@ -159,8 +159,8 @@ class MRTempFile<K> {
             int farRightPageId = getIntFromRow(leftNode, 0, 1);
             setLeafPointerRow(leftPageId, farLeftPageId, rightPageId);
             setLeafPointerRow(rightPageId, leftPageId, farRightPageId);
+            bm.unpinPage(leftPageId, fileTitle);
         }
-        bm.unpinPage(leftPageId, fileTitle);
         bm.unpinPage(rightPageId, fileTitle);
         return rightPageId;
     }
@@ -281,6 +281,11 @@ class MRTempFile<K> {
         rowData.putInt(rid.getPageId());
         rowData.putInt(rid.getSlotId());
         insertAlongPath(key, new Row(rowData.array()), searchPath, treeDepth - 1);
+    }
+
+    @Override
+    public String toString() {
+        return fileTitle + " depth is " + treeDepth; 
     }
 
 }
