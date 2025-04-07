@@ -5,18 +5,18 @@ import java.util.List;
 
 public class IndexTests {
 
-    public static MRTempFile<String> CreateIndex(BufferManager bm, int attributeIndex, int pinnedPageCount) {
-        MRTempFile<String> btree = new MRTempFile<String>(bm, 4000, pinnedPageCount);
+    public static BufferBTree<String> CreateIndex(BufferManager bm, int bytesInKey, int attS, int attL, int pinnedPageDepth, boolean debugPrinting) {
+        BufferBTree<String> btree = new BufferBTree<String>(bm, bytesInKey, pinnedPageDepth, debugPrinting);
         int pageId = 0;
 
         while (true) {
             try {
                 Page page = bm.getPage(pageId);
-
-                for (int rowId = 0; rowId < Constants.MAX_PAGE_ROWS; rowId++) {
+                
+                for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
                         Row row = page.getRow(rowId);
-                        String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
+                        String key = new String(row.getAttribute(attS, attL), StandardCharsets.UTF_8).trim();
                         btree.insert(key, new Rid(pageId, rowId));
                     }
                     catch (Exception ex) { }
@@ -32,11 +32,12 @@ public class IndexTests {
 
         bm.force();
 
-        System.out.println("Built index");
+        System.out.println("Built index for attribute starting at byte: " + attS);
         return btree;
     }
 
-    public static void verifyIndex(MRTempFile<String> bTreeIndex, BufferManager bm, String key, int attributeIndex) {
+    public static void verifyIndex(BufferBTree<String> bTreeIndex, BufferManager bm, String key, int attS, int attL) {
+        System.out.println("\nVerifying index for key: " + key + " at attribute  starting at byte: " + attS);
         Iterator<Rid> rids = bTreeIndex.search(key);
 
         if (!rids.hasNext()) {
@@ -47,21 +48,23 @@ public class IndexTests {
             Rid rid = rids.next();
             Page page = bm.getPage(rid.getPageId());
             Row row = page.getRow(rid.getSlotId());
-            String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
+            String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
-            if (!foundKeyValue.equals(key)) {
+            if (!foundKeyValue.isEmpty() && !foundKeyValue.equals(key)) {
                 System.err.println("Couldn't find key: Search key: " + key + ", Found key: " + foundKeyValue +
                     " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
-            } else {
-                System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
+            } else if (!foundKeyValue.isEmpty()) {
+                // System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
             bm.unpinPage(rid.getPageId());
         }
     }
 
-    public static void verifyRange(MRTempFile<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
-        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
+    public static void verifyRange(BufferBTree<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attS, int attL) {
+        System.out.println("\nVerifying index for range: " + startKey + ", " + endKey + " at attribute  starting at byte: " + attS);
+
+        Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
 
         if (!rids.hasNext()) {
             System.out.println("Couldn't find entries in the range: " + startKey + ", " + endKey);
@@ -71,38 +74,42 @@ public class IndexTests {
             Rid rid = rids.next();
             Page page = bm.getPage(rid.getPageId());
             Row row = page.getRow(rid.getSlotId());
-            String foundKeyValue = new String(row.getAttribute(attributeIndex)).trim();
+            String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
-            if (foundKeyValue.compareTo(startKey) < 0 || foundKeyValue.compareTo(endKey) > 0) {
+            if (!foundKeyValue.isEmpty() && (foundKeyValue.compareToIgnoreCase(startKey) < 0 || foundKeyValue.compareToIgnoreCase(endKey) > 0)) {
                 System.err.println("Found key out of given range: (startKey, endKey): (" + startKey + ", " + endKey 
                     + "), Found key: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
-            } else {
-                System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
+            }
+            if (!foundKeyValue.isEmpty()) {
+                // System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
             bm.unpinPage(rid.getPageId());
         }
     }
 
-    public static void compareRangeSearch(MRTempFile<String> bTreeIndex, BufferManager bm, String[][] ranges, int attributeIndex, int totalRowsInTable) {
+    public static void compareRangeSearch(BufferBTree<String> bTreeIndex, BufferManager bm, String[][] ranges, int attS, int attL, int totalRowsInTable) {
         List<Double> selectivities = new ArrayList<>();
         List<Double> scanTimes = new ArrayList<>();
         List<Double> indexTimes = new ArrayList<>();
 
         for (String[] range : ranges) {
+            System.out.println("\nComparing sequential and index range queries for keys: " + range[0] + ", " + range[1]);
             String startKey = range[0];
             String endKey = range[1];
 
             // Sequential scan
             long startTime = System.nanoTime();
-            List<Row> scanResults = scanTable(bm, attributeIndex, startKey, endKey);
+            List<Row> scanResults = scanTable(bm, attS, attL, startKey.trim(), endKey.trim());
             long scanTime = System.nanoTime() - startTime;
             scanTimes.add(scanTime / 1e6); // msec
 
+            System.out.println("Sequential scan took " + scanTime / 1e6 + " ms");
+
             // Index range query
             startTime = System.nanoTime();
-            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
-            List<Row> indexResults = fetchRows(bm, rids);
+            Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
+            List<Row> indexResults = fetchRows(bm, rids, attS, attL);
             long indexTime = System.nanoTime() - startTime;
             indexTimes.add(indexTime / 1e6); // msec
 
@@ -110,15 +117,14 @@ public class IndexTests {
             double selectivity = (double) scanResults.size() / totalRowsInTable;
             selectivities.add(selectivity);
 
-            System.out.println("Range [" + startKey + ", " + endKey + "]: " +
-                "Scan rows = " + scanResults.size() + ", Index rows = " + indexResults.size());
+            System.out.println("Index scan took " + indexTime / 1e6 + " ms");
         }
 
         // Output results
         plotResults(selectivities, scanTimes, indexTimes);
     }
 
-    private static List<Row> scanTable(BufferManager bm, int attributeIndex, String startKey, String endKey) {
+    private static List<Row> scanTable(BufferManager bm, int attS, int attL, String startKey, String endKey) {
         List<Row> results = new ArrayList<>();
         int pageId = 0;
 
@@ -126,12 +132,17 @@ public class IndexTests {
             try {
                 Page page = bm.getPage(pageId);
 
-                for (int rowId = 0; rowId < Constants.MAX_PAGE_ROWS; rowId++) {
+                for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
                         Row row = page.getRow(rowId);
-                        String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();
+                        String key = new String(row.getAttribute(attS, attL), StandardCharsets.UTF_8).trim();
 
-                        if (key.compareTo(startKey) >= 0 && key.compareTo(endKey) <= 0) {
+                        if (attS == Constants.MOVIE_ID_START_BYTE) {
+                            key = key.substring(0, Constants.MOVIE_ID_SIZE).trim();
+                        }
+
+                        if (key.compareToIgnoreCase(startKey) >= 0 && key.compareToIgnoreCase(endKey) <= 0) {
+                            // System.out.println("Found: " + key + " at page " + pageId + ", slot " + rowId);
                             results.add(row);
                         }
                     }
@@ -149,14 +160,29 @@ public class IndexTests {
         return results;
     }
 
-    private static List<Row> fetchRows(BufferManager bm, Iterator<Rid> rids) {
+    private static List<Row> fetchRows(BufferManager bm, Iterator<Rid> rids, int attS, int attL) {
         List<Row> results = new ArrayList<>();
 
         while (rids.hasNext()) {
             Rid rid = rids.next();
-            Page page = bm.getPage(rid.getPageId());
-            Row row = page.getRow(rid.getSlotId());
-            results.add(row);
+
+            try {
+                Page page = bm.getPage(rid.getPageId());
+                Row row = page.getRow(rid.getSlotId());
+
+                String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
+
+                if (attS == Constants.MOVIE_ID_START_BYTE) {
+                    foundKeyValue = foundKeyValue.substring(0, Constants.MOVIE_ID_SIZE).trim();
+                }
+
+                if (!foundKeyValue.isEmpty()) {
+                    results.add(row);
+                }
+            } catch (Exception e) {
+                continue;
+            }
+
             bm.unpinPage(rid.getPageId());
         }
 

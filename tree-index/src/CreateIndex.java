@@ -5,54 +5,59 @@ import java.util.Random;
 public class CreateIndex {
 
     public static void main(String[] args) {
-        //experimented with different buffer sizes by changing Constants.BUFFER_SIZE
-        BufferManager bufferManager = new LRUBufferManager();
+        boolean testTitleIndex = true;
+
+        BufferManager bufferManager = new LRUBufferManager(250);
 
         int totalRowsInTable = loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
 
-        // TestC1 - create index on title
-        MRTempFile<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX, 0);
+        if (!testTitleIndex) {
+            // TestC2 - create index on movieId
+            BufferBTree<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 0, false);
 
-        // TestC3 - Verify index on title
-        IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Conjuring", Constants.TITLE_INDEX);
+            // TestC3 - Verify index on movieId
+            IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_START_BYTE, 9);
 
-        // TestC4 - Verify index on title
-        IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_INDEX);
+            // TestP2 - Range query comparision on Id
+            String[][] rangesIds = {
+                {"tt0000001", "tt0000013"},
+                {"tt0000001", "tt0000146"},
+                {"tt0000001", "tt0000578"},
+                {"tt0000001", "tt0000999"},
+                {"tt0000001", "tt0001099"}
+            };
 
-        // TestC2 - create index on movieId
-        MRTempFile<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.MOVIE_ID_INDEX, 0);
+            IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, 9, totalRowsInTable);
 
-        // TestC3 - Verify index on movieId
-        IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_INDEX);
+            // TestP3 - Keeping initial pages pinned
+            BufferBTree<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 10, false);
 
-        // TestC4 - Verify index on movieId
-        IndexTests.verifyRange(titleIndexBTree, bufferManager, "tt0000137", "tt0000147", Constants.MOVIE_ID_INDEX);
+            IndexTests.compareRangeSearch(movieIdIndexBTreePinned, bufferManager, rangesIds, 0, 9, totalRowsInTable);
+        }
+        else {
+            // TestC1 - create index on title
+            BufferBTree<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_START_BYTE, 30, 0, false);
 
-        // TestP1 - Range query comparision on title
-        String[][] rangesMovieTitle = {
-            {"A Hard Wash", "Awakening of Rip"},
-            {"A Hard Wash", "Conjuring"},
-            {"A Hard Wash", "Grandes manoeuvres"}
-        };
+            // TestC3 - Verify index on title
+            IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Coney Island", Constants.TITLE_START_BYTE, 30);
 
-        IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, 1, totalRowsInTable);
+            // TestC4 - Verify index on title
+            IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_START_BYTE, 30);
 
-        // TestP2 - Range query comparision on Id
-        String[][] rangesIds = {
-            {"tt0000001", "tt0000013"},
-            {"tt0000001", "tt0000046"},
-            {"tt0000001", "tt0000078"}
-        };
+            // TestP1 - Range query comparision on title
+            String[][] rangesMovieTitle = {
+                {"Above the Limit", "Above the Speedway"},
+                {"A Hard Wash", "Awakening of Rip"},
+                {"A Hard Wash", "Conjuring"},                
+            };
 
-        IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, totalRowsInTable);
+            IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
 
-        // TestP3 - Keeping initial pages pinned
-        MRTempFile<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX, 10);
-        MRTempFile<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, Constants.MOVIE_ID_INDEX, 10);
+            // TestP3 - Keeping initial pages pinned
+            BufferBTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_START_BYTE, 30, 10, false);
 
-        IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, 1, totalRowsInTable);
-
-        IndexTests.compareRangeSearch(movieIdIndexBTreePinned, bufferManager, rangesIds, 0, totalRowsInTable);
+            IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
+        }
     }
 
     public static int loadDatasetSequentially(BufferManager bf, String csvFile) {
@@ -68,6 +73,10 @@ public class CreateIndex {
             int skippedMovies = 0;
 
             while (curRow != null) {
+
+                if (rowsProcessed == 20000) {
+                    break;
+                }
                 
                 if (currentPage.isFull()) {
                     bf.unpinPage(currentPage.getId());

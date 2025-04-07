@@ -1,7 +1,7 @@
 import java.util.Iterator;
 public class BTreeTest {
     public static void main(String[] args) {
-        BTreeIndex<Integer> btree = new BTreeIndex<>(3);    // Create a B-tree with max keys = 3
+        BTree<Integer> btree = new BufferBTree<Integer>(new LRUBufferManager(8), 2);    // Create a B-tree with max keys = 3
         
          //inserting keys into the B-tree
         System.out.println("inserting keys");
@@ -11,8 +11,6 @@ public class BTreeTest {
         insertAndPrint(btree, 40);
         insertAndPrint(btree, 50);
         
-        //printing final root keys
-        System.out.println("final BTree root keys: " + btree.getRootKeys());
         //searching for a specific key
         System.out.println("Searching for key 30...");
         Iterator<Rid> searchResult = btree.search(30);
@@ -28,9 +26,9 @@ public class BTreeTest {
         System.out.println(searchResult2.hasNext());
     }
 
-    private static void insertAndPrint(BTreeIndex<Integer> btree, int key) {
+    private static void insertAndPrint(BTree<Integer> btree, int key) {
         Rid rid = new Rid(key, key);    //creating Rid with key as both pageId and slotId
         btree.insert(key, rid); //insert key into the B-tree
-        System.out.println("Inserted " + key + ", current root keys: " + btree.getRootKeys());
+        System.out.println("Inserted " + key);
     }
 }
