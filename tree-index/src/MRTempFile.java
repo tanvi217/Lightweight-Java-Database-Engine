@@ -111,7 +111,7 @@ class MRTempFile<K> {
             ++rowId;
         }
         boolean unfinished = rowId == pageHeight;
-        int nextLeafPid = unfinished ? getIntFromRow(leafPage, rowId, 1) : -1; // if value from row is -1 then we have reached the end of leaf pages
+        int nextLeafPid = unfinished ? getIntFromRow(leafPage, 0, 1) : -1; // if value from row is -1 then we have reached the end of leaf pages
         bm.unpinPage(leafPid, fileTitle);
         if (nextLeafPid > 0) { // if last row still matches, some matches may be in next leaf
             matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
