@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 
-class BTreeInternalNodeBM<K extends Comparable<K>> extends BTreeNodeBM<K> {
+class BTreeInternalNodeBM extends BTreeNodeBM{
     private List<BTreeNode<K>> children;    //child nodes of this internal node
 
     public BTreeInternalNodeBM(BufferManager bm) {
