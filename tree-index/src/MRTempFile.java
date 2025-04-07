@@ -19,262 +19,32 @@ class MRTempFile<K> {
     private String fileTitle;
     private int pinDepth; // unused for now
 
-    // updates the two integers stored in the 
-    private void setLeafPointerRow(int targetPageId, int leftPageId, int rightPageId) {
-        ByteBuffer twoInts = ByteBuffer.allocate(8);
-        twoInts.putInt(leftPageId);
-        twoInts.putInt(rightPageId);
-        Row newRow = new Row(twoInts.array());
-        Page leafPage = bm.getPage(targetPageId, fileTitle);
-        if (leafPage.height() == 0) {
-            leafPage.insertRow(newRow);
-        } else {
-            leafPage.modifyRow(newRow, 0);
-        }
-        bm.unpinPage(targetPageId, fileTitle);
-    }
-
-    private int createNewRoot() {
-        boolean isLeaf = treeDepth == 0; // very first root, new node will be leaf
-        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
-        int pageId = bm.createPage(fileTitle, bytesInRow).getId();
-        if (isLeaf) {
-            setLeafPointerRow(pageId, -1, -1);
-        }
-        bm.unpinPage(pageId, fileTitle);
-        ++treeDepth;
-        return pageId;
-    }
-
     public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth, boolean debugPrinting) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
         this.pinDepth = pinDepth;
         treeDepth = 0;
         fileTitle = "B-plus-tree-" + (++numInstances);
-        rootPid = createNewRoot(); // sets treeDepth to 1
+        createNewRoot(); // sets treeDepth to 1 and rootPid to correct page ID
     }
 
     public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth) { this(bm, bytesInKey, pinDepth, false); }
     public MRTempFile(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, 0, false); }
 
-    private byte[] dataAfterKey(Page nodePage, int rowId) {
-        byte[] rowData = nodePage.getRow(rowId).data;
-        return Arrays.copyOfRange(rowData, bytesInKey, rowData.length);
-    }
-
-    private int compareKeyToRow(byte[] key, Page nodePage, int rowId) {
-        byte[] rowData = nodePage.getRow(rowId).data;
-        return Arrays.compare(key, 0, bytesInKey, rowData, 0, bytesInKey);
-    }
-
-    private int findInNonLeafPage(byte[] key, int pageId) {
-        Page nodePage = bm.getPage(pageId, fileTitle);
-        byte[] leftPointer = dataAfterKey(nodePage, 0); // pageId bytes of first row
-        int rowId = 1; // start loop at second row
-        while (rowId < nodePage.height()) {
-            if (compareKeyToRow(key, nodePage, rowId) <= 0) { // compare key to current row's key
-                break;
-            }
-            leftPointer = dataAfterKey(nodePage, rowId); // pageId bytes of current row
-            ++rowId;
-        } // if break is never reached, the loop ends with leftPointer being the pageId of the final row
-        bm.unpinPage(pageId, fileTitle);
-        return ByteBuffer.wrap(leftPointer).getInt(); // convert pageId bytes to int
-    }
-
-    public byte[] getKeyFromComparable(K callerKey) {
-        if (callerKey instanceof String) {
-            String keyString = (String) callerKey;
-            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), bytesInKey);
-        }
-        if (callerKey instanceof Integer) {
-            int keyInt = (Integer) callerKey;
-            return ByteBuffer.allocate(4).putInt(keyInt).array();
-        }
-        return ByteBuffer.allocate(4).putInt(callerKey.hashCode()).array();
-    }
-
-    private int getIntFromRow(Page nodePage, int rowId, int index) {
-        byte[] rowData = nodePage.getRow(rowId).data;
-        return ByteBuffer.wrap(rowData).getInt(index * 4);
-    }
-
-    private List<Rid> getLeafMatches(int leafPid, byte[] startKey, byte[] endKey) {
-        List<Rid> matches = new ArrayList<>();
-        Page leafPage = bm.getPage(leafPid, fileTitle);
-        int pageHeight = leafPage.height();
-        int rowId = 1; // start at second row
-        while (rowId < pageHeight && compareKeyToRow(startKey, leafPage, rowId) > 0) {
-            ++rowId;
-        }
-        while (rowId < pageHeight && compareKeyToRow(endKey, leafPage, rowId) >= 0) {
-            matches.add(new Rid(dataAfterKey(leafPage, rowId)));
-            ++rowId;
-        }
-        boolean unfinished = rowId == pageHeight;
-        int nextLeafPid = unfinished ? getIntFromRow(leafPage, 0, 1) : -1; // if value from row is -1 then we have reached the end of leaf pages
-        bm.unpinPage(leafPid, fileTitle);
-        if (nextLeafPid > 0) { // if last row still matches, some matches may be in next leaf
-            matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
-        }
-        return matches;
-    }
-
-    private int[] getSearchPath(byte[] key) {
-        int[] searchPath = new int[treeDepth];
-        int currentPid = rootPid;
-        int depthIndex = 0;
-        while (depthIndex < treeDepth - 1) {
-            searchPath[depthIndex] = currentPid;
-            currentPid = findInNonLeafPage(key, currentPid);
-            ++depthIndex;
-        }
-        searchPath[depthIndex] = currentPid;
-        return searchPath;
-    }
-
-    private Iterator<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
-        int pageId = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
-        return getLeafMatches(pageId, startKey, endKey).iterator();
-    }
-
+    @Override
     public Iterator<Rid> search(K callerKey) {
-        byte[] key = getKeyFromComparable(callerKey);
+        byte[] key = getKeyFromComparable(callerKey); // convert from int, String, etc.. to byte[]
         return internalRangeSearch(key, key);
     }
 
+    @Override
     public Iterator<Rid> rangeSearch(K callerStartKey, K callerEndKey) {
         byte[] startKey = getKeyFromComparable(callerStartKey);
         byte[] endKey = getKeyFromComparable(callerEndKey);
         return internalRangeSearch(startKey, endKey);
     }
 
-    private int createNewSibling(int leftPageId, int depthIndex) {
-        boolean isLeaf = depthIndex == treeDepth - 1; 
-        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
-        Page rightNode = bm.createPage(fileTitle, bytesInRow);
-        int rightPageId = rightNode.getId();
-        if (isLeaf) {
-            Page leftNode = bm.getPage(leftPageId, fileTitle);
-            int farLeftPageId = getIntFromRow(leftNode, 0, 0);
-            int farRightPageId = getIntFromRow(leftNode, 0, 1);
-            setLeafPointerRow(leftPageId, farLeftPageId, rightPageId);
-            setLeafPointerRow(rightPageId, leftPageId, farRightPageId);
-            bm.unpinPage(leftPageId, fileTitle);
-        }
-        bm.unpinPage(rightPageId, fileTitle);
-        return rightPageId;
-    }
-
-    // private void splitAndInsertAlongPath(byte[] key, Row newRow, int[] searchPath, int depthIndex) {
-    //     int nodePageId = searchPath[depthIndex];
-    //     Page targetPage = bm.getPage(nodePageId, fileTitle);
-    //     int siblingPid = createNewSibling(nodePageId, depthIndex);
-
-    //     if (depthIndex == 0) { // splitting the root
-    //         int parentPageId = createNewRoot(); // updates treeDepth
-
-    //         rootPid = parentPageId;
-    //         return;
-    //     }
-    //     int parentPageId = searchPath[depthIndex - 1];
-
-    //     // insert pointers into parent
-    // }
-
-    private void insertIntoOpenNode(byte[] key, Row newRow, Page targetPage) {
-        int rowId = 1;
-        while (rowId < targetPage.height()) {
-            if (compareKeyToRow(key, targetPage, rowId) <= 0) {
-                break;
-            }
-            ++rowId;
-        }
-        Row rowToInsert = newRow;
-        while (rowId < targetPage.height()) {
-            Row rowToMove = targetPage.getRow(rowId);
-            targetPage.modifyRow(rowToInsert, rowId);
-            rowToInsert = rowToMove;
-            ++rowId;
-        }
-        targetPage.insertRow(rowToInsert);
-    }
-
-    private void splitAndInsertAlongPath(byte[] key, Row newRow, int[] searchPath, int depthIndex) {
-        int nodePageId = searchPath[depthIndex];
-        Page targetPage = bm.getPage(nodePageId, fileTitle);
-        int middleRowId = targetPage.height() / 2; //this is the number of rows currently in the page divided by 2
-        //save the middleKey itself to use later
-        byte[] middleRowData = targetPage.getRow(middleRowId).data;
-        byte[] middleKey = Arrays.copyOf(middleRowData, bytesInKey);
-        int rowIdInTarget = middleRowId;
-        //creation of new page
-        boolean isLeaf = nodePageId == searchPath[treeDepth - 1];
-        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4);
-        int siblingPid = createNewSibling(nodePageId, depthIndex);
-        //a little optimization which ISN'T implemented could be check if the key to be inserted is in the second half of the page
-        //i.e. it is in the new page, if that is the case then we could add it in appropriately in the below loop.
-        int comparison = compareKeyToRow(key, targetPage, middleRowId); // key to middleKey
-        //may want to change to >, but i think this is correct
-        /*if(comparison>=0){
-            //now we continue on with optimized portion, a lot of copy and pasting
-        }*/
-        Page siblingNode = bm.getPage(siblingPid, fileTitle);
-    
-        //we KNOW that comparison <0 --> key < middleKey --> where to insert key must be in
-        //here we do things as normal
-        //first we fill the newPage appropriately
-        while(rowIdInTarget < targetPage.height()){
-            siblingNode.insertRow(targetPage.getRow(rowIdInTarget));
-            ++rowIdInTarget;
-        }
-        
-        //now the new page is filled properly, and we insert the key into the appropriate spot in pageToSplit aka oldPage
-        //we also need to "delete" the moved entries from pageToSplit which is the same as setting newRowId appropriately
-        //don't need +1 because middleKey in right page
-        targetPage.setHeight(middleRowId);
-        if (comparison < 0) {
-            insertIntoOpenNode(key, newRow, targetPage);
-        } else {
-            insertIntoOpenNode(key, newRow, siblingNode);
-        }
-        bm.unpinPage(targetPage.getId(), fileTitle);
-        bm.unpinPage(siblingNode.getId(), fileTitle);
-        ByteBuffer pointerRowData = ByteBuffer.allocate(bytesInKey + 4);
-        pointerRowData.put(middleKey);
-        pointerRowData.putInt(siblingPid);
-        Row pointerRow = new Row(pointerRowData.array());
-
-        if (depthIndex == 0) { // splitting the root
-            int parentPageId = createNewRoot(); // updates treeDepth
-            int nonLeafNodeRowLength = bytesInKey + 4;
-            Page newRoot = bm.getPage(parentPageId, fileTitle);
-            ByteBuffer leftPointerRowData = ByteBuffer.allocate(nonLeafNodeRowLength);
-            leftPointerRowData.position(bytesInKey);
-            leftPointerRowData.putInt(nodePageId);
-            Row leftPointerRow = new Row(pointerRowData.array());
-            newRoot.insertRow(leftPointerRow);
-            newRoot.insertRow(pointerRow);
-            bm.unpinPage(parentPageId, fileTitle);
-            rootPid = parentPageId;
-        } else {
-            insertAlongPath(middleKey, pointerRow, searchPath, depthIndex - 1);
-        }
-    }
-
-    private void insertAlongPath(byte[] key, Row newRow, int[] searchPath, int depthIndex) {
-        int nodePageId = searchPath[depthIndex];
-        Page targetPage = bm.getPage(nodePageId, fileTitle);
-        if (targetPage.isFull()) {
-            bm.unpinPage(targetPage.getId(), fileTitle);
-            splitAndInsertAlongPath(key, newRow, searchPath, depthIndex);
-            return;
-        }
-        insertIntoOpenNode(key, newRow, targetPage);
-        bm.unpinPage(targetPage.getId(), fileTitle);
-    }
-
+    @Override
     public void insert(K callerKey, Rid rid) {
         byte[] key = getKeyFromComparable(callerKey);
         int[] searchPath = getSearchPath(key);
@@ -288,6 +58,225 @@ class MRTempFile<K> {
     @Override
     public String toString() {
         return fileTitle + " depth is " + treeDepth; 
+    }
+
+    // sets the rootPid and treeDepth instance variables
+    private void createNewRoot() {
+        boolean isLeaf = treeDepth == 0; // very first root, new node will be leaf
+        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
+        rootPid = bm.createPage(fileTitle, bytesInRow).getId();
+        if (isLeaf) {
+            setLeafSiblings(rootPid, -1, -1);
+        }
+        bm.unpinPage(rootPid, fileTitle);
+        ++treeDepth;
+    }
+    
+    // updates the two integer page IDs stored in the first row of a leaf node
+    private void setLeafSiblings(int leafPid, int leftSibPid, int rightSibPid) {
+        ByteBuffer sibPids = ByteBuffer.allocate(8);
+        sibPids.putInt(leftSibPid);
+        sibPids.putInt(rightSibPid);
+        Row siblingRow = new Row(sibPids.array());
+        Page leaf = bm.getPage(leafPid, fileTitle);
+        if (leaf.height() == 0) { // if leaf is empty, function to insert into first row is different
+            leaf.insertRow(siblingRow);
+        } else {
+            leaf.modifyRow(siblingRow, 0);
+        }
+        bm.unpinPage(leafPid, fileTitle);
+    }
+
+    // converts strings and integers to byte arrays. If K is neither, use the integer callerKey.hashCode()
+    private byte[] getKeyFromComparable(K callerKey) {
+        if (callerKey instanceof String) {
+            String keyString = (String) callerKey;
+            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), bytesInKey);
+        }
+        if (callerKey instanceof Integer) {
+            int keyInt = (Integer) callerKey;
+            return ByteBuffer.allocate(4).putInt(keyInt).array();
+        }
+        return ByteBuffer.allocate(4).putInt(callerKey.hashCode()).array();
+    }
+
+    // finds the search path to the node containing the start key, and finds matches starting there
+    private Iterator<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) {
+        int leafPid = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
+        return getLeafMatches(leafPid, startKey, endKey).iterator();
+    }
+
+    // starts at root, and follows pointers in the tree to the leaf page containing the first occurence of the key
+    private int[] getSearchPath(byte[] key) {
+        int[] searchPath = new int[treeDepth];
+        int currentPid = rootPid;
+        int depthIndex = 0;
+        while (depthIndex < treeDepth - 1) { // depthIndex is less than the depth index of the leaves
+            searchPath[depthIndex] = currentPid;
+            currentPid = findInNonLeafPage(key, currentPid); // currentPid is definitely not the ID of a leaf
+            ++depthIndex;
+        }
+        searchPath[depthIndex] = currentPid; // if treeDepth == 1 and root is a leaf, this will be rootPid
+        return searchPath;
+    }
+
+    // finds the page ID pointer which is followed when searching for the given key in this index
+    private int findInNonLeafPage(byte[] key, int nodePid) {
+        Page node = bm.getPage(nodePid, fileTitle);
+        byte[] leftPointer = dataAfterKey(node, 0); // page ID bytes of first row
+        int rowId = 1; // start loop at second row
+        while (rowId < node.height()) {
+            if (compareKeyToRow(key, node, rowId) <= 0) { // compare key to current row's key
+                break;
+            }
+            leftPointer = dataAfterKey(node, rowId); // page ID bytes of current row
+            ++rowId;
+        } // if break is never reached, the loop ends with leftPointer being the page ID bytes of the final row
+        bm.unpinPage(nodePid, fileTitle);
+        return ByteBuffer.wrap(leftPointer).getInt(); // convert page ID bytes to int
+    }
+
+    // gets everything in a row's data array except for the bytes corresponding to the key
+    private byte[] dataAfterKey(Page node, int rowId) {
+        byte[] rowData = node.getRow(rowId).data;
+        return Arrays.copyOfRange(rowData, bytesInKey, rowData.length);
+    }
+
+    // compares the key part of the given byte[] with the key part of the specified row
+    private int compareKeyToRow(byte[] key, Page node, int rowId) {
+        byte[] rowData = node.getRow(rowId).data;
+        return Arrays.compare(key, 0, bytesInKey, rowData, 0, bytesInKey);
+    }
+
+    // if row is an array of ints, gets the int at the specified index
+    private int getIntFromRow(Page node, int rowId, int index) {
+        byte[] rowData = node.getRow(rowId).data;
+        return ByteBuffer.wrap(rowData).getInt(index * 4);
+    }
+
+    private List<Rid> getLeafMatches(int leafPid, byte[] startKey, byte[] endKey) {
+        List<Rid> matches = new ArrayList<>();
+        Page leaf = bm.getPage(leafPid, fileTitle);
+        int rowId = 1; // start at second row
+        while (rowId < leaf.height() && compareKeyToRow(startKey, leaf, rowId) > 0) {
+            ++rowId;
+        }
+        while (rowId < leaf.height() && compareKeyToRow(endKey, leaf, rowId) >= 0) {
+            matches.add(new Rid(dataAfterKey(leaf, rowId))); // passes byte array of Rid data directly to constructor
+            ++rowId;
+        }
+        // if last row still matches (i.e. rowId == leaf.height()), some matches may be in next leaf
+        int nextLeafPid = rowId == leaf.height() ? getIntFromRow(leafPage, 0, 1) : -2; // if value from row is -1 then we have reached the end of leaf pages. -2 if we did finish searching and don't need a next page ID
+        bm.unpinPage(leafPid, fileTitle);
+        if (nextLeafPid >= 0) {
+            matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
+        }
+        return matches;
+    }
+
+    private void insertAlongPath(byte[] key, Row newRow, int[] searchPath, int depthIndex) {
+        int targetPid = searchPath[depthIndex];
+        Page target = bm.getPage(targetPid, fileTitle);
+        if (target.isFull()) {
+            bm.unpinPage(targetPid, fileTitle);
+            splitAndInsertAlongPath(key, newRow, searchPath, depthIndex);
+            return;
+        }
+        insertIntoOpenNode(key, newRow, target);
+        bm.unpinPage(targetPid, fileTitle);
+    }
+
+    private void splitAndInsertAlongPath(byte[] key, Row newRow, int[] searchPath, int depthIndex) {
+        int targetPid = searchPath[depthIndex];
+        Page target = bm.getPage(targetPid, fileTitle);
+        int middleRowId = target.height() / 2; // this is the number of rows currently in the page divided by 2
+        byte[] middleRowData = targetPage.getRow(middleRowId).data;
+        byte[] middleKey = Arrays.copyOf(middleRowData, bytesInKey); // save the middleKey itself to use later
+        boolean isLeaf = targetPid == searchPath[treeDepth - 1];
+        int siblingPid = createNewSibling(targetPid, depthIndex);
+        //a little optimization which ISN'T implemented could be check if the key to be inserted is in the second half of the page
+        //i.e. it is in the new page, if that is the case then we could add it in appropriately in the below loop.
+        int comparison = compareKeyToRow(key, target, middleRowId); // key to middleKey
+        //may want to change to >, but i think this is correct
+        /*if(comparison>=0){
+            //now we continue on with optimized portion, a lot of copy and pasting
+        }*/
+        Page sibling = bm.getPage(siblingPid, fileTitle);
+    
+        //we KNOW that comparison <0 --> key < middleKey --> where to insert key must be in
+        //here we do things as normal
+        //first we fill the newPage appropriately
+        int rowIdInTarget = middleRowId;
+        while(rowIdInTarget < target.height()){
+            sibling.insertRow(target.getRow(rowIdInTarget));
+            ++rowIdInTarget;
+        }
+        
+        //now the new page is filled properly, and we insert the key into the appropriate spot in pageToSplit aka oldPage
+        //we also need to "delete" the moved entries from pageToSplit which is the same as setting newRowId appropriately
+        //don't need +1 because middleKey in right page
+        target.setHeight(middleRowId);
+        if (comparison < 0) {
+            insertIntoOpenNode(key, newRow, target);
+        } else {
+            insertIntoOpenNode(key, newRow, sibling);
+        }
+        bm.unpinPage(targetPid, fileTitle);
+        bm.unpinPage(siblingPid, fileTitle);
+        ByteBuffer pointerRowData = ByteBuffer.allocate(bytesInKey + 4); // will be inserted into non-leaf parent
+        pointerRowData.put(middleKey);
+        pointerRowData.putInt(siblingPid);
+        Row pointerRow = new Row(pointerRowData.array());
+
+        if (depthIndex == 0) { // splitting the root
+            createNewRoot(); // updates treeDepth and sets rootPid
+            Page root = bm.getPage(rootPid, fileTitle);
+            ByteBuffer leftPointerRowData = ByteBuffer.allocate(bytesInKey + 4);
+            leftPointerRowData.position(bytesInKey);
+            leftPointerRowData.putInt(targetPid);
+            Row leftPointerRow = new Row(leftPointerRowData.array());
+            newRoot.insertRow(leftPointerRow);
+            newRoot.insertRow(pointerRow);
+            bm.unpinPage(rootPid, fileTitle);
+        } else {
+            insertAlongPath(middleKey, pointerRow, searchPath, depthIndex - 1); // no root split, just insert into next level up the path
+        }
+    }
+
+    // returns page ID of new sibling
+    private int createNewSibling(int leftPid, int depthIndex) {
+        boolean isLeaf = depthIndex == treeDepth - 1; 
+        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
+        Page right = bm.createPage(fileTitle, bytesInRow);
+        int rightPid = right.getId();
+        if (isLeaf) {
+            Page left = bm.getPage(leftPid, fileTitle);
+            int farLeftPid = getIntFromRow(left, 0, 0); // original left pointer of left node
+            int farRightPid = getIntFromRow(left, 0, 1); // original right pointer of left node
+            setLeafSiblings(leftPid, farLeftPid, rightPid);
+            setLeafSiblings(rightPid, leftPid, farRightPid);
+            bm.unpinPage(leftPid, fileTitle);
+        }
+        bm.unpinPage(rightPid, fileTitle);
+        return rightPid;
+    }
+    
+    private void insertIntoOpenNode(byte[] key, Row newRow, Page target) {
+        int rowId = 1;
+        while (rowId < target.height()) {
+            if (compareKeyToRow(key, target, rowId) <= 0) {
+                break;
+            }
+            ++rowId;
+        }
+        Row rowToInsert = newRow;
+        while (rowId < target.height()) {
+            Row rowToMove = target.getRow(rowId);
+            target.modifyRow(rowToInsert, rowId);
+            rowToInsert = rowToMove;
+            ++rowId;
+        }
+        target.insertRow(rowToInsert);
     }
 
 }
