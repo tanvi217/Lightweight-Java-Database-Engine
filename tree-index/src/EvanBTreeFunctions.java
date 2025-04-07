@@ -198,4 +198,34 @@ public class EvanBTreeFunctions {
 
     }   
 
+    if(comparison <=0){
+        insertIntoNode(key, newRow, nodePageId, searchPath);
+    }
+    else{
+        insertIntoNode(key, newRow, newPage.getId(), searchPath);
+    }
+    if(isLeaf){
+        //now setting the previous and next pointers
+        //first we get the original ones out
+        int ogPrev = getIntFromRow(targetPage, 0, 0);
+        int ogNext = getIntFromRow(targetPage, 0, 1);
+        //first put the older previous and newPageId as next in the pageToSplit page
+        ByteBuffer pageToSplitBuff = ByteBuffer.allocate(bytesInRow);
+        pageToSplitBuff.putInt(ogPrev);
+        pageToSplitBuff.putInt(newPageId);
+        targetPage.modifyRow(new Row(pageToSplitBuff.array()), 0);
+        
+        //now put the pageToSplit as previous and the old next as the next pointer
+        ByteBuffer newPageBuff = ByteBuffer.allocate(bytesInRow);
+        newPageBuff.putInt(targetPage.getId());
+        newPageBuff.putInt(ogNext);
+        newPage.modifyRow(new Row(newPageBuff.array()), 0);
+    }
+    
+
+    }
+    //now previous and next should be properly created/modified.
+    //if we have an internal/nonleaf node we do NOT need to worry about this process.
+}
+
 }
