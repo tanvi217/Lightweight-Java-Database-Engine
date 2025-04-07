@@ -32,11 +32,12 @@ public class IndexTests {
 
         bm.force();
 
-        System.out.println("Built index");
+        System.out.println("Built index for attributeIndex: " + attributeIndex);
         return btree;
     }
 
     public static void verifyIndex(MRTempFile<String> bTreeIndex, BufferManager bm, String key, int attributeIndex) {
+        System.out.println("\nVerifying index for key: " + key + " at attribute index: " + attributeIndex);
         Iterator<Rid> rids = bTreeIndex.search(key);
 
         if (!rids.hasNext()) {
@@ -61,6 +62,8 @@ public class IndexTests {
     }
 
     public static void verifyRange(MRTempFile<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attributeIndex) {
+        System.out.println("\nVerifying index for range: " + startKey + ", " + endKey + " at attribute index: " + attributeIndex);
+
         Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey, endKey);
 
         if (!rids.hasNext()) {
@@ -90,6 +93,7 @@ public class IndexTests {
         List<Double> indexTimes = new ArrayList<>();
 
         for (String[] range : ranges) {
+            System.out.println("\nComparing sequential and index range queries for keys: " + range[0] + ", " + range[1]);
             String startKey = range[0];
             String endKey = range[1];
 

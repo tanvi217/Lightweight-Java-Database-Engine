@@ -13,7 +13,7 @@ public class CreateIndex {
         MRTempFile<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, Constants.TITLE_INDEX, 0);
 
         // TestC3 - Verify index on title
-        IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Conjuring", Constants.TITLE_INDEX);
+        IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Coney Island", Constants.TITLE_INDEX);
 
         // TestC4 - Verify index on title
         IndexTests.verifyRange(titleIndexBTree, bufferManager, "Boat Race", "Conjuring", Constants.TITLE_INDEX);
@@ -68,7 +68,7 @@ public class CreateIndex {
 
             while (curRow != null) {
 
-                if (rowsProcessed == 5000) {
+                if (rowsProcessed == 20000) {
                     break;
                 }
                 
