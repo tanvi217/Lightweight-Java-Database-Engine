@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class MRTempFile<K extends Comparable<K>> implements BTree<K> {
+class BufferBTree<K extends Comparable<K>> implements BTree<K> {
 
     private static int numInstances = 0; // used for creating a unique fileTitle for each new BTree
     private BufferManager bm;
@@ -20,18 +20,18 @@ class MRTempFile<K extends Comparable<K>> implements BTree<K> {
     private int pinDepth; // unused for now
     private boolean debugPrinting;
 
-    public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth, boolean debugPrinting) {
+    public BufferBTree(BufferManager bm, int bytesInKey, int pinDepth, boolean debugPrinting) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
         this.pinDepth = pinDepth;
         this.debugPrinting = debugPrinting;
         treeDepth = 0;
-        fileTitle = "B-plus-tree-" + (++numInstances);
+        fileTitle = "bm-B-plus-tree-" + (++numInstances);
         createNewRoot(); // sets treeDepth to 1 and rootPid to correct page ID
     }
 
-    public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth) { this(bm, bytesInKey, pinDepth, false); }
-    public MRTempFile(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, 0, false); }
+    public BufferBTree(BufferManager bm, int bytesInKey, int pinDepth) { this(bm, bytesInKey, pinDepth, false); }
+    public BufferBTree(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, 0, false); }
 
     @Override
     public Iterator<Rid> search(K callerKey) {
