@@ -92,12 +92,16 @@ class MRTempFile<K extends Comparable<K>> implements BTree<K> {
     // converts strings and integers to byte arrays. If K is neither, use the integer callerKey.hashCode()
     private byte[] getKeyFromComparable(K callerKey) {
         if (callerKey instanceof String) {
-            String keyString = (String) callerKey;
+            String keyString = ((String) callerKey).toLowerCase();
             return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), bytesInKey);
         }
         if (callerKey instanceof Integer) {
-            int keyInt = (Integer) callerKey;
-            return ByteBuffer.allocate(4).putInt(keyInt).array();
+            String inBase36 = Integer.toString((Integer) callerKey, 36);
+            String atLength = String.format("%" + bytesInKey + "s", inBase36).replace(' ', '0');
+            return Arrays.copyOf(atLength.getBytes(StandardCharsets.UTF_8), bytesInKey);
+        }
+        if (bytesInKey != 4) {
+            throw new IllegalArgumentException("If the key is not a string or an integer, then the number of bytes in a key must be 4.");
         }
         return ByteBuffer.allocate(4).putInt(callerKey.hashCode()).array();
     }
