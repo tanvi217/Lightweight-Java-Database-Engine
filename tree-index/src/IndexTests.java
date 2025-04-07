@@ -104,7 +104,7 @@ public class IndexTests {
             long scanTime = System.nanoTime() - startTime;
             scanTimes.add(scanTime / 1e6); // msec
 
-            System.out.println("Sequential scan took " + scanTime / 1e6 + " ms, found " + scanResults.size() + " rows.");
+            System.out.println("Sequential scan took " + scanTime / 1e6 + " ms");
 
             // Index range query
             startTime = System.nanoTime();
@@ -117,7 +117,7 @@ public class IndexTests {
             double selectivity = (double) scanResults.size() / totalRowsInTable;
             selectivities.add(selectivity);
 
-            System.out.println("Index scan took " + indexTime / 1e6 + " ms, found " + indexResults.size() + " rows.");
+            System.out.println("Index scan took " + indexTime / 1e6 + " ms");
         }
 
         // Output results

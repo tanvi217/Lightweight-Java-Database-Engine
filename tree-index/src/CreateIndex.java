@@ -21,10 +21,10 @@ public class CreateIndex {
             // TestP2 - Range query comparision on Id
             String[][] rangesIds = {
                 {"tt0000001", "tt0000013"},
-                {"tt0000001", "tt0000046"},
-                {"tt0000001", "tt0000078"},
-                {"tt0000001", "tt0000099"},
-                {"tt0000001", "tt0000351"}
+                {"tt0000001", "tt0000146"},
+                {"tt0000001", "tt0000578"},
+                {"tt0000001", "tt0000999"},
+                {"tt0000001", "tt0001099"}
             };
 
             IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, 9, totalRowsInTable);
@@ -47,9 +47,9 @@ public class CreateIndex {
             // TestP1 - Range query comparision on title
             String[][] rangesMovieTitle = {
                 {"Above the Limit", "Above the Speedway"},
+                {"The Haunted House", "The Sign of the Cross"},
                 {"A Hard Wash", "Awakening of Rip"},
-                {"A Hard Wash", "Conjuring"},
-                {"A Hard Wash", "Grandes manoeuvres"}
+                {"A Hard Wash", "Conjuring"},                
             };
 
             IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
