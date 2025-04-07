@@ -46,17 +46,18 @@ public class CreateIndex {
 
             // TestP1 - Range query comparision on title
             String[][] rangesMovieTitle = {
+                {"Above the Limit", "Above the Speedway"},
                 {"A Hard Wash", "Awakening of Rip"},
                 {"A Hard Wash", "Conjuring"},
                 {"A Hard Wash", "Grandes manoeuvres"}
             };
 
-            IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, 1, 30, totalRowsInTable);
+            IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
 
             // TestP3 - Keeping initial pages pinned
             BufferBTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_START_BYTE, 30, 10, false);
 
-            IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, 1, 30, totalRowsInTable);
+            IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
         }
     }
 

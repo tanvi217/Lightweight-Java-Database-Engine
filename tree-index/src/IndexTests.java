@@ -54,7 +54,7 @@ public class IndexTests {
                 System.err.println("Couldn't find key: Search key: " + key + ", Found key: " + foundKeyValue +
                     " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             } else if (!foundKeyValue.isEmpty()) {
-                System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
+                // System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
             bm.unpinPage(rid.getPageId());
@@ -81,7 +81,7 @@ public class IndexTests {
                     + "), Found key: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
             if (!foundKeyValue.isEmpty()) {
-                System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
+                // System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
             bm.unpinPage(rid.getPageId());
@@ -142,7 +142,7 @@ public class IndexTests {
                         }
 
                         if (key.compareToIgnoreCase(startKey) >= 0 && key.compareToIgnoreCase(endKey) <= 0) {
-                            System.out.println("Found: " + key + " at page " + pageId + ", slot " + rowId);
+                            // System.out.println("Found: " + key + " at page " + pageId + ", slot " + rowId);
                             results.add(row);
                         }
                     }
@@ -176,11 +176,9 @@ public class IndexTests {
                     foundKeyValue = foundKeyValue.substring(0, Constants.MOVIE_ID_SIZE).trim();
                 }
 
-                // if (!foundKeyValue.isEmpty()) {
-                //     results.add(row);
-                // }
-
-                results.add(row);
+                if (!foundKeyValue.isEmpty()) {
+                    results.add(row);
+                }
             } catch (Exception e) {
                 continue;
             }
