@@ -6,14 +6,14 @@ import java.util.List;
 public class IndexTests {
 
     public static MRTempFile<String> CreateIndex(BufferManager bm, int attributeIndex, int pinnedPageCount) {
-        MRTempFile<String> btree = new MRTempFile<String>(bm, 4000, pinnedPageCount);
+        MRTempFile<String> btree = new MRTempFile<String>(bm, 9, pinnedPageCount);
         int pageId = 0;
 
         while (true) {
             try {
                 Page page = bm.getPage(pageId);
-
-                for (int rowId = 0; rowId < Constants.MAX_PAGE_ROWS; rowId++) {
+                
+                for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
                         Row row = page.getRow(rowId);
                         String key = new String(row.getAttribute(attributeIndex), StandardCharsets.UTF_8).trim();

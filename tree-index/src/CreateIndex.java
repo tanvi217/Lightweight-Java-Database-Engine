@@ -5,8 +5,7 @@ import java.util.Random;
 public class CreateIndex {
 
     public static void main(String[] args) {
-        //experimented with different buffer sizes by changing Constants.BUFFER_SIZE
-        BufferManager bufferManager = new LRUBufferManager();
+        BufferManager bufferManager = new LRUBufferManager(250);
 
         int totalRowsInTable = loadDatasetSequentially(bufferManager, Constants.IMDB_TSV_FILE);
 
