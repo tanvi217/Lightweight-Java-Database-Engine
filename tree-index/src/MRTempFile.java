@@ -10,15 +10,16 @@ import java.util.List;
 
 class MRTempFile<K> {
 
-    private static int numInstances = 0;
+    private static int numInstances = 0; // used for creating a unique fileTitle for each new BTree
     private BufferManager bm;
     
-    private int rootPid;
-    private int treeDepth;
-    private int bytesInKey;
+    private int rootPid; // page id of root
+    private int treeDepth; // number of layers in tree. So single leaf node as root has treeDepth 1
+    private int bytesInKey; // number of bytes in search key
     private String fileTitle;
     private int pinDepth; // unused for now
 
+    // updates the two integers stored in the 
     private void setLeafPointerRow(int targetPageId, int leftPageId, int rightPageId) {
         ByteBuffer twoInts = ByteBuffer.allocate(8);
         twoInts.putInt(leftPageId);
@@ -45,7 +46,7 @@ class MRTempFile<K> {
         return pageId;
     }
 
-    public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth) {
+    public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth, boolean debugPrinting) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
         this.pinDepth = pinDepth;
@@ -54,7 +55,8 @@ class MRTempFile<K> {
         rootPid = createNewRoot(); // sets treeDepth to 1
     }
 
-    public MRTempFile(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, 0); }
+    public MRTempFile(BufferManager bm, int bytesInKey, int pinDepth) { this(bm, bytesInKey, pinDepth, false); }
+    public MRTempFile(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, 0, false); }
 
     private byte[] dataAfterKey(Page nodePage, int rowId) {
         byte[] rowData = nodePage.getRow(rowId).data;
@@ -103,7 +105,7 @@ class MRTempFile<K> {
         Page leafPage = bm.getPage(leafPid, fileTitle);
         int pageHeight = leafPage.height();
         int rowId = 1; // start at second row
-        while (rowId < pageHeight && compareKeyToRow(startKey, leafPage, rowId) < 0) {
+        while (rowId < pageHeight && compareKeyToRow(startKey, leafPage, rowId) > 0) {
             ++rowId;
         }
         while (rowId < pageHeight && compareKeyToRow(endKey, leafPage, rowId) >= 0) {
