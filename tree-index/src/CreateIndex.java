@@ -68,7 +68,7 @@ public class CreateIndex {
 
             while (curRow != null) {
 
-                if (rowsProcessed == 5000) {
+                if (rowsProcessed == 20000) {
                     break;
                 }
                 
