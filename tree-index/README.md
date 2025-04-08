@@ -7,7 +7,7 @@
 ```sh
 git clone https://github.com/06tron/cs645-labs.git
 cd cs645-labs
-git checkout "TO BE ADDED"
+git checkout 510656707eb71864f0d60f638508da1867942cde
 ```
 3. Move the IMDb TSV file into the `data` subdirectory of `cs645-labs`.
 ```sh

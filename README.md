@@ -2,7 +2,7 @@
 
 - Lab 1: Buffer Manager [[Submitted Code]](https://github.com/06tron/cs645-labs/tree/febbee43c6dc42044b91f8c67e34f5b84e88f24c) [[Report]](https://docs.google.com/document/d/1yRNIZFOOBZGDW5Cv4G_jT15FkewFEATbQRjvpLWB9GQ/edit)
 - Updated Buffer Manager [[README]](buffer-manager/README.md)
-- Lab 2: B+ Tree [[README]](tree-index/README.md) [[Report]](https://docs.google.com/document/d/1SG5lAwYw57gmQXd6RDFmwVrRFUDq0thglfQiCLqKAug/edit)
+- Lab 2: B+ Tree [[README]](tree-index/README.md) [[Submitted Code]](https://github.com/06tron/cs645-labs/tree/510656707eb71864f0d60f638508da1867942cde) [[Report]](https://docs.google.com/document/d/1SG5lAwYw57gmQXd6RDFmwVrRFUDq0thglfQiCLqKAug/edit)
 
 ### group members
 - Priyanka Gupta (priyankagpta)
