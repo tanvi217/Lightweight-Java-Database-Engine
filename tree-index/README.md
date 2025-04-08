@@ -14,8 +14,8 @@ git checkout "TO BE ADDED"
 mkdir data
 curl --output-dir data -O https://datasets.imdbws.com/title.basics.tsv.gz
 ```
-4. Build and run the code using Apache Ant 1.10.15 and Java.
+4. Build and run the code using Apache Ant 1.10.15 and Java. The `ant run` command runs the main method of the `tree-index/src/CreateIndex.java` file.
 ```sh
-cd buffer-manager
-ant run "SOMETHING"
+cd tree-index
+ant run
 ```

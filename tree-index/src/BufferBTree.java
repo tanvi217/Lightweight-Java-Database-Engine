@@ -86,6 +86,7 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
         } else {
             leaf.modifyRow(siblingRow, 0);
         }
+        bm.markDirty(leafPid, fileTitle);
         bm.unpinPage(leafPid, fileTitle);
     }
 
@@ -241,11 +242,13 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
             sibling.insertRow(target.getRow(rowIdInTarget));
             ++rowIdInTarget;
         }
+        bm.markDirty(siblingPid, fileTitle);
         
         //now the new page is filled properly, and we insert the key into the appropriate spot in pageToSplit aka oldPage
         //we also need to "delete" the moved entries from pageToSplit which is the same as setting newRowId appropriately
         //don't need +1 because middleKey in right page
         target.setHeight(middleRowId);
+        bm.markDirty(targetPid, fileTitle);
         if (comparison < 0) {
             insertIntoOpenNode(key, newRow, target);
         } else {
@@ -267,6 +270,7 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
             Row leftPointerRow = new Row(leftPointerRowData.array());
             root.insertRow(leftPointerRow);
             root.insertRow(pointerRow);
+            bm.markDirty(rootPid, fileTitle);
             bm.unpinPage(rootPid, fileTitle);
         } else {
             insertAlongPath(middleKey, pointerRow, searchPath, depthIndex - 1); // no root split, just insert into next level up the path
@@ -307,6 +311,7 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
             ++rowId;
         }
         target.insertRow(rowToInsert);
+        bm.markDirty(target.getId(), fileTitle);
     }
 
 }
