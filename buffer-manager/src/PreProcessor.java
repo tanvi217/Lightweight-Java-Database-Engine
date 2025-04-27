@@ -5,7 +5,7 @@ import java.util.Deque;
 
 public class PreProcessor {
     public static void main(String[] args) throws Exception {
-        BufferManager bm = new LRUBufferManager();
+        BufferManager bm = new LRUBufferManager(250);
 
         System.out.println("Loading tables...");
 
@@ -34,7 +34,7 @@ public class PreProcessor {
         Deque<Row> lastFive = new ArrayDeque<>(5);
 
         while ((line = br.readLine()) != null) {
-            if (limitProcessingForDebug && pages > 200) break; // limit to 200 pages for testing
+            if (limitProcessingForDebug && page.getId() > 500000) break;
 
             String[] t = line.split("\t");
             byte[] idB = t[0].getBytes();
@@ -78,7 +78,7 @@ public class PreProcessor {
         Deque<Row> lastFive = new ArrayDeque<>(5);
 
         while ((line = br.readLine()) != null) {
-            if (limitProcessingForDebug && pages > 2000) break; // limit to 2000 pages for testing
+            if (limitProcessingForDebug && page.getId() > 500000) break; // limit to 500000 pages for testing
 
             String[] t = line.split("\t");
 
@@ -93,7 +93,7 @@ public class PreProcessor {
                 pad(t[2], Constants.WORKEDON_PERSONID_SIZE),
                 pad(t[3], Constants.WORKEDON_CATEGORY_SIZE)
             );
-            
+
             if (page.insertRow(r) >= 0) {
                 rows++;
                 bm.markDirty(page.getId(), "WorkedOn");
@@ -103,7 +103,7 @@ public class PreProcessor {
         }
 
         bm.unpinPage(page.getId(), "WorkedOn");
-        // bm.force();
+        bm.force();
         br.close();
 
         System.out.printf("\nWorkedOn: processed %d rows, pages %d%n", rows, pages);
