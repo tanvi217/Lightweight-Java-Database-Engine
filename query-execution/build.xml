@@ -11,7 +11,7 @@
 
     <property name="junit.jar" value="${labs.lib}/junit-4.13.2.jar"/>
     <property name="hamcrest.jar" value="${labs.lib}/hamcrest-core-1.3.jar"/>
-    <property name="main-method-class" value="Row"/>
+    <property name="main-method-class" value="PreProcessor"/>
 
     <target name="init">
         <mkdir dir="${labs.qe.build}"/>
@@ -60,6 +60,7 @@
         <delete>
             <fileset dir="${labs.qe.build}"/>
             <fileset dir="${labs.qe.test}" includes="TEST-*.txt"/>
+            <fileset dir="${labs.data}" includes="temp-*.bin"/>
         </delete>
     </target>
 
