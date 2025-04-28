@@ -15,6 +15,7 @@ git checkout febbee43c6dc42044b91f8c67e34f5b84e88f24c
 ```sh
 mkdir buffer-manager/data lib
 curl --output-dir buffer-manager/data -O https://datasets.imdbws.com/title.basics.tsv.gz
+gunzip buffer-manager/data/title.basics.tsv.gz
 curl --output-dir lib -O https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar
 curl --output-dir lib -O https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar
 ```

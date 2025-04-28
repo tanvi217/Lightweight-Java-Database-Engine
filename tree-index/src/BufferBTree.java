@@ -168,16 +168,17 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
         try {
             leaf = bm.getPage(leafPid, fileTitle);
         } catch (Exception e) {
+            return matches;
         }
         
         int rowId = 1; // start at second row
-        while (leaf != null && rowId < leaf.height() && compareKeyToRow(startKey, leaf, rowId) > 0) {
+        while (rowId < leaf.height() && compareKeyToRow(startKey, leaf, rowId) > 0) {
             ++rowId;
         }
         if (debugPrinting) {
             System.out.println("First match found at row " + rowId + " of page " + leafPid);
         }
-        while (leaf != null && rowId < leaf.height() && compareKeyToRow(endKey, leaf, rowId) >= 0) {
+        while (rowId < leaf.height() && compareKeyToRow(endKey, leaf, rowId) >= 0) {
             matches.add(new Rid(dataAfterKey(leaf, rowId))); // passes byte array of Rid data directly to constructor
             ++rowId;
         }
@@ -186,10 +187,6 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
             System.out.println(" - Total number of rows was: " + leaf.height());
         }
         // if last row still matches (i.e. rowId == leaf.height()), some matches may be in next leaf
-
-        if (leaf == null) {
-            return matches; // if leaf is null, we are done searching
-        }
 
         int nextLeafPid = rowId == leaf.height() ? getIntFromRow(leaf, 0, 1) : -2; // if value from row is -1 then we have reached the end of leaf pages. -2 if we did finish searching and don't need a next page ID
         bm.unpinPage(leafPid, fileTitle);
