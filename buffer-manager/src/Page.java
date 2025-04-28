@@ -16,7 +16,9 @@ public interface Page {
      */
     int insertRow(Row row);
 
-    void modifyRow(Row newRow, int rowId);
+    void insertRow(Row row, int rowId);
+
+    void overwriteRow(Row newRow, int rowId);
 
     void setHeight(int height);
 

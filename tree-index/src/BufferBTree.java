@@ -84,7 +84,7 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
         if (leaf.height() == 0) { // if leaf is empty, function to insert into first row is different
             leaf.insertRow(siblingRow);
         } else {
-            leaf.modifyRow(siblingRow, 0);
+            leaf.overwriteRow(siblingRow, 0);
         }
         bm.markDirty(leafPid, fileTitle);
         bm.unpinPage(leafPid, fileTitle);
@@ -303,7 +303,7 @@ class BufferBTree<K extends Comparable<K>> implements BTree<K> {
         Row rowToInsert = newRow;
         while (rowId < target.height()) {
             Row rowToMove = target.getRow(rowId);
-            target.modifyRow(rowToInsert, rowId);
+            target.overwriteRow(rowToInsert, rowId);
             rowToInsert = rowToMove;
             ++rowId;
         }

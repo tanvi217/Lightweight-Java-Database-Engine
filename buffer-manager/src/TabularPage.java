@@ -83,24 +83,39 @@ public class TabularPage implements Page {
             return -1;
         }
         int rowId = nextRowId;
-        int rowStart = pageStart + rowId * rowLength;
-        buffer.position(rowStart);
-        buffer.put(toSize(row.data, rowLength)); // write data to buffer
-        rows[rowId] = row;
         ++nextRowId;
+        overwriteRow(row, rowId);
         buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
         return rowId;
     }
 
-    //modifies an existing row, based on its rowId and replaces it with the given Row, newRow
-    public void modifyRow(Row newRow, int rowId){
-        if(rowId < 0 || rowId >= nextRowId){
+    //modifies an existing row, based on its rowId and replaces it with the given Row
+    public void overwriteRow(Row row, int rowId){
+        if (rowId < 0 || rowId >= nextRowId){
             throw new IllegalArgumentException("Row index out of bounds.");
         }
         int rowStart = pageStart + rowId * rowLength;
         buffer.position(rowStart);
-        buffer.put(toSize(newRow.data, rowLength)); // write data to buffer
-        rows[rowId] = newRow;
+        buffer.put(row.getRange(0, rowLength)); // write data to buffer
+        rows[rowId] = row;
+    }
+
+    @Override
+    public void insertRow(Row row, int rowId) {
+        if (nextRowId >= maxRows) {
+            throw new IllegalArgumentException("No room to insert row.");
+        }
+        if (rowId < 0 || rowId >= nextRowId){
+            throw new IllegalArgumentException("Row index out of bounds.");
+        }
+        Row rowToInsert = row;
+        while (rowId < nextRowId) {
+            Row rowToMove = getRow(rowId);
+            overwriteRow(rowToInsert, rowId);
+            rowToInsert = rowToMove;
+            ++rowId;
+        }
+        insertRow(rowToInsert);
     }
 
     public int height(){

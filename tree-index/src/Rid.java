@@ -10,8 +10,10 @@ public class Rid {
     }
 
     public Rid(byte[] eightBytes) {
-        ByteBuffer twoInts = ByteBuffer.wrap(eightBytes);
-        twoInts.position(0); // is this needed?
+        this(ByteBuffer.wrap(eightBytes));
+    }
+
+    public Rid(ByteBuffer twoInts) {
         pageId = twoInts.getInt();
         slotId = twoInts.getInt();
     }
