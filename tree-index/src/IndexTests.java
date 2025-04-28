@@ -11,7 +11,7 @@ public class IndexTests {
 
         while (true) {
             try {
-                Page page = bm.getPage(pageId);
+                Page page = bm.getPage(pageId, "imdb");
                 
                 for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
@@ -22,7 +22,7 @@ public class IndexTests {
                     catch (Exception ex) { }
                 }
     
-                bm.unpinPage(pageId);
+                bm.unpinPage(pageId,"imdb");
                 pageId++;
             }
             catch (Exception e) {
@@ -46,7 +46,7 @@ public class IndexTests {
         
         while (rids.hasNext()) {
             Rid rid = rids.next();
-            Page page = bm.getPage(rid.getPageId());
+            Page page = bm.getPage(rid.getPageId(), "imdb");
             Row row = page.getRow(rid.getSlotId());
             String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
@@ -57,7 +57,7 @@ public class IndexTests {
                 // System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
-            bm.unpinPage(rid.getPageId());
+            bm.unpinPage(rid.getPageId(), "imdb");
         }
     }
 
@@ -72,7 +72,7 @@ public class IndexTests {
 
         while (rids.hasNext()) {
             Rid rid = rids.next();
-            Page page = bm.getPage(rid.getPageId());
+            Page page = bm.getPage(rid.getPageId(), "imdb");
             Row row = page.getRow(rid.getSlotId());
             String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
 
@@ -84,7 +84,7 @@ public class IndexTests {
                 // System.out.println("Found: " + foundKeyValue + " at page " + rid.getPageId() + ", slot " + rid.getSlotId());
             }
 
-            bm.unpinPage(rid.getPageId());
+            bm.unpinPage(rid.getPageId(), "imdb");
         }
     }
 
@@ -130,7 +130,7 @@ public class IndexTests {
 
         while (true) {
             try {
-                Page page = bm.getPage(pageId);
+                Page page = bm.getPage(pageId, "imdb");
 
                 for (int rowId = 0; rowId < page.height(); rowId++) {
                     try {
@@ -149,7 +149,7 @@ public class IndexTests {
                     catch (Exception ex) { }
                 }
     
-                bm.unpinPage(pageId);
+                bm.unpinPage(pageId, "imdb");
                 pageId++;
             }
             catch (Exception e) {
@@ -167,7 +167,7 @@ public class IndexTests {
             Rid rid = rids.next();
 
             try {
-                Page page = bm.getPage(rid.getPageId());
+                Page page = bm.getPage(rid.getPageId(), "imdb");
                 Row row = page.getRow(rid.getSlotId());
 
                 String foundKeyValue = new String(row.getAttribute(attS, attL)).trim();
@@ -183,7 +183,7 @@ public class IndexTests {
                 continue;
             }
 
-            bm.unpinPage(rid.getPageId());
+            bm.unpinPage(rid.getPageId(), "imdb");
         }
 
         return results;

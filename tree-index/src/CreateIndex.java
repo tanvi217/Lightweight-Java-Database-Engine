@@ -26,7 +26,6 @@ public class CreateIndex {
                 {"tt0000001", "tt0000999"},
                 {"tt0000001", "tt0001099"}
             };
-
             IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, 9, totalRowsInTable);
 
             // TestP3 - Keeping initial pages pinned
@@ -66,7 +65,7 @@ public class CreateIndex {
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
             String curRow;
             int pageId = 0;
-            Page currentPage = bf.createPage();
+            Page currentPage = bf.createPage("imdb", Constants.IMDB_ROW_LENGTH);
             curRow = br.readLine(); // Skip title row
             int pagesCreated = 0;
             boolean skipLongMovieId = true;
@@ -79,9 +78,9 @@ public class CreateIndex {
                 }
                 
                 if (currentPage.isFull()) {
-                    bf.unpinPage(currentPage.getId());
+                    bf.unpinPage(currentPage.getId(), "imdb");
 
-                    currentPage = bf.createPage();
+                    currentPage = bf.createPage("imdb", Constants.IMDB_ROW_LENGTH);
                     pagesCreated++;
                     pageId = currentPage.getId();
                 }
@@ -102,7 +101,7 @@ public class CreateIndex {
                 // if row was inserted, mark the page dirty
                 if (rowId != -1) {
                     rowsProcessed++;
-                    bf.markDirty(pageId);
+                    bf.markDirty(pageId, "imdb");
 
                     if (rowsProcessed % 1000000 == 0) {
                         System.out.println("Processed row with ID " + rowId + " in page with Id " + currentPage.getId());
@@ -113,7 +112,7 @@ public class CreateIndex {
                 }
             }
 
-            bf.unpinPage(currentPage.getId());
+            bf.unpinPage(currentPage.getId(), "imdb");
             System.out.println(skippedMovies + " rows skipped due to long movieId.");
             System.out.println("Processed " + rowsProcessed + " rows, Created " + pagesCreated + " pages.");
             System.out.println("Finished loading dataset.");
@@ -144,7 +143,7 @@ public class CreateIndex {
 
             // create enough pages to ensure subsequent eviction
             for (int i = 0; i < possibleBufferPoolSize; i++) {
-                Page currentPage = bf.createPage();
+                Page currentPage = bf.createPage("imdb", Constants.IMDB_ROW_LENGTH);
                 pagesCreated++;
                 int append_pid = currentPage.getId();
                 int rowId = 0;
@@ -170,7 +169,7 @@ public class CreateIndex {
                     // if row was inserted, mark the page dirty
                     if (rowId != -1) {
                         rowsProcessed++;
-                        bf.markDirty(append_pid);
+                        bf.markDirty(append_pid, "imdb");
 
                         if (rowsProcessed % 10 == 0) {
                             System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
@@ -185,7 +184,7 @@ public class CreateIndex {
                     }
                 }
 
-                bf.unpinPage(append_pid);
+                bf.unpinPage(append_pid, "imdb");
             }
 
             // getPage calls to ensure eviction
@@ -193,7 +192,7 @@ public class CreateIndex {
             for (int i = 0; i < possibleBufferPoolSize + 10; i++) {
                 int randomPageId = rand.nextInt(pagesCreated);
 
-                Page pageFromBufferPool = bf.getPage(randomPageId);
+                Page pageFromBufferPool = bf.getPage(randomPageId, "imdb");
 
                 if (pageFromBufferPool != null) {
                     System.out.println("Queried page with Id " + pageFromBufferPool.getId());
@@ -218,7 +217,7 @@ public class CreateIndex {
                     // if row was inserted, mark the page dirty
                     if (rowId != -1) {
                         rowsProcessed++;
-                        bf.markDirty(pageFromBufferPool.getId());
+                        bf.markDirty(pageFromBufferPool.getId(), "imdb");
 
                         if (rowsProcessed % 100 == 0) {
                             System.out.println("Processed " + rowId + " rows in page with Id " + pageFromBufferPool.getId());
@@ -233,21 +232,21 @@ public class CreateIndex {
                     }
                 }
 
-                bf.unpinPage(pageFromBufferPool.getId());
+                bf.unpinPage(pageFromBufferPool.getId(), "imdb");
             }
 
             System.out.println("Finished querying. Processing rest of the dataset.");
 
-            Page currentPage = bf.createPage();
+            Page currentPage = bf.createPage("imdb", Constants.IMDB_ROW_LENGTH);
             pagesCreated++;
             int append_pid = currentPage.getId();
 
             while (curRow != null) {
                 
                 if (currentPage.isFull()) {
-                    bf.unpinPage(currentPage.getId());
+                    bf.unpinPage(currentPage.getId(), "imdb");
 
-                    currentPage = bf.createPage();
+                    currentPage = bf.createPage("imdb", Constants.IMDB_ROW_LENGTH);
                     pagesCreated++;
                     append_pid = currentPage.getId();
                 }
@@ -268,7 +267,7 @@ public class CreateIndex {
                 // if row was inserted, mark the page dirty
                 if (rowId != -1) {
                     rowsProcessed++;
-                    bf.markDirty(append_pid);
+                    bf.markDirty(append_pid, "imdb");
 
                     if (rowsProcessed % 1000000 == 0) {
                         System.out.println("Processed " + rowId + " rows in page with Id " + currentPage.getId());
@@ -279,7 +278,7 @@ public class CreateIndex {
                 }
             }
 
-            bf.unpinPage(currentPage.getId());
+            bf.unpinPage(currentPage.getId(), "imdb");
             System.out.println(skippedMovies + " rows skipped due to long movieId.");
             System.out.println("Processed " + rowsProcessed + " rows, Created " + pagesCreated + " pages.");
             System.out.println("Finished loading dataset.");
