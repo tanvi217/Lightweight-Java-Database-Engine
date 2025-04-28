@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="query-execution" default="run">
+
+    <property name="labs.qe.src" location="src"/>
+    <property name="labs.ti.src" location="../tree-index/src"/>
+    <property name="labs.bm.src" location="../buffer-manager/src"/>
+    <property name="labs.qe.test" location="test"/>
+    <property name="labs.qe.build" location="build"/>
+    <property name="labs.data" location="../data"/>
+    <property name="labs.lib" location="../lib"/>
+
+    <property name="junit.jar" value="${labs.lib}/junit-4.13.2.jar"/>
+    <property name="hamcrest.jar" value="${labs.lib}/hamcrest-core-1.3.jar"/>
+    <property name="main-method-class" value="Row"/>
+
+    <target name="init">
+        <mkdir dir="${labs.qe.build}"/>
+    </target>
+
+    <target name="compile" depends="init">
+        <javac destdir="${labs.qe.build}" includeAntRuntime="false">
+            <src path="${labs.qe.src}"/>
+            <src path="${labs.ti.src}"/>
+            <src path="${labs.bm.src}"/>
+        </javac>
+    </target>
+
+    <target name="run" depends="compile">
+        <java classname="${main-method-class}" classpath="${labs.qe.build}"/>
+    </target>
+
+    <target name="compile-test" depends="init">
+        <javac destdir="${labs.qe.build}" includeAntRuntime="false">
+            <src path="${labs.qe.src}"/>
+            <src path="${labs.ti.src}"/>
+            <src path="${labs.bm.src}"/>
+            <src path="${labs.qe.test}"/>
+            <classpath>
+                <pathelement path="${junit.jar}"/>
+                <pathelement path="${hamcrest.jar}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="test" depends="compile-test">
+        <junit printsummary="yes" haltonfailure="yes">
+            <classpath>
+                <pathelement path="${labs.qe.build}"/>
+                <pathelement path="${junit.jar}"/>
+                <pathelement path="${hamcrest.jar}"/>
+            </classpath>
+            <formatter type="plain"/>
+            <batchtest fork="off" todir="${labs.qe.test}"> <!-- fork was "yes" before. Is that what it should be? -->
+                <fileset dir="${labs.qe.test}"/>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="clean">
+        <delete>
+            <fileset dir="${labs.qe.build}"/>
+            <fileset dir="${labs.qe.test}" includes="TEST-*.txt"/>
+        </delete>
+    </target>
+
+</project>
