@@ -36,7 +36,6 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
         createNewRoot(); // sets treeDepth to 1 and rootPid to correct page ID
     }
 
-    public TempBufferBTree(BufferManager bm, int bytesInKey, int pinDepth) { this(bm, bytesInKey, false); }
     public TempBufferBTree(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, false); }
 
     @Override
