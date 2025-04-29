@@ -60,6 +60,8 @@ public abstract class BufferManager {
      */
     abstract void markDirty(int pageId, String fileTitle);
 
+    abstract void markClean(int pageId, String fileTitle);
+
     /**
      * Unpins a page in the buffer pool, allowing it to be evicted if necessary.
      *
@@ -90,6 +92,7 @@ public abstract class BufferManager {
     public Page getPage(int pageId) { return getPage(pageId, defaultFileTitle); }
     public Page createPage() { return createPage(defaultFileTitle, Constants.IMDB_ROW_LENGTH); }
     public void markDirty(int pageId) { markDirty(pageId, defaultFileTitle); }
+    public void markClean(int pageId) { markDirty(pageId, defaultFileTitle); }
     public void unpinPage(int pageId) { unpinPage(pageId, defaultFileTitle); }
 
 }

@@ -269,6 +269,22 @@ public class LRUBufferManager extends BufferManager {
     }
 
     @Override
+    public void markClean(int pageId, String filename) {
+        int pageKey = getPageKey(pageId, filename);
+        if (pageId < 0 || !pageTable.containsKey(pageKey)) {
+            throw new IllegalArgumentException("Error Marking Page " + pageId + " Clean: No page with this ID is in the buffer.");
+        }
+    
+        int frameIndex = pageTable.get(pageKey);
+        isDirty[frameIndex] = false;
+    
+        if (debugPrinting) {
+            System.out.println("Marked page " + pageId + " as clean");
+        }
+    }
+    
+
+    @Override
     public void unpinPage(int pageId, String filename) {
         int pageKey = getPageKey(pageId, filename);
         if (pageId < 0 || !pageTable.containsKey(pageKey)) {

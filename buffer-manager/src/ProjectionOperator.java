@@ -1,5 +1,5 @@
 import java.util.*;
-import java.io.File;
+// import java.io.File;
 
 public class ProjectionOperator implements Operator {
     private final Operator child;
@@ -47,6 +47,7 @@ public class ProjectionOperator implements Operator {
         child.close();
         for (int pageId : tempPageIds) {
             bufferManager.unpinPage(pageId, TEMP_FILE_NAME);
+            bufferManager.markClean(pageId, TEMP_FILE_NAME);
         }
         tempPageIds.clear();
     }
