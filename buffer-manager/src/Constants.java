@@ -26,4 +26,8 @@ public class Constants {
     public static final String BINARY_DATA_FILE = "data.bin";
     public static final String INDEX_DATA_FILE = "index.bin";
     public static final int MAX_PAGE_ROWS = PAGE_KB * 1024 / IMDB_ROW_LENGTH;
+    //new constants for lab 3
+    public static final String TEMP_FILE_NAME = "__temp__"; //temp file produced from projection
+    public static final int PROJECTED_ROW_LENGTH = 19; // size of rows from temp file ^, movieId(9) + personId(10)
+    public static final String JOIN1_TEMP_FILE_NAME = "__join1temp__";
 }

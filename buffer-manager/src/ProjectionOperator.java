@@ -6,7 +6,7 @@ public class ProjectionOperator implements Operator {
     private final BufferManager bufferManager;
     private final String TEMP_FILE_NAME = "__temp__";
     private final int PROJECTED_ROW_LENGTH = 19; // movieId(9) + personId(10)
-
+    //might want to change to public later so join1 can see how many pages we are using, useful for calculation of how big to make a block
     private final List<Integer> tempPageIds = new ArrayList<>();
     private int currentPageIndex = 0;
     private int currentRid = 0;
@@ -38,7 +38,10 @@ public class ProjectionOperator implements Operator {
                 currentRid = 0;
             }
         }
-
+        //resetting currentPageIndex and currentRid back to 0. the reason for this is we will return null ONCE upon next call, and then
+        //restart from the begginning.
+        currentPageIndex = 0;
+        currentRid =0;
         return null;
     }
 
