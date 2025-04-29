@@ -78,13 +78,24 @@ public class LRUBufferManager extends BufferManager {
      * @param filename The name of the file to be initialized.
      */
     private void initFile(String filename) {
+        if (filename.equals("__temp__")) return;  // Skip in-memory temp files
+    
         try {
-            new File(pathToFile(filename)).createNewFile();
+            File file = new File(pathToFile(filename));
+            File parent = file.getParentFile();
+            if (!parent.exists()) {
+                parent.mkdirs();  // Creates "data/" directory if missing
+            }
+    
+            if (!file.exists()) {
+                file.createNewFile();
+            }
         } catch (IOException e) {
             System.out.println("I/O Error: the data directory may be misplaced.");
             e.printStackTrace();
         }
     }
+    
 
     private int getNextPageId(String filename) {
         if (!numPagesInFile.containsKey(filename)) {

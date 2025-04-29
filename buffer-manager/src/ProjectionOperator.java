@@ -1,17 +1,20 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.io.File;
 
 public class ProjectionOperator implements Operator {
-    private Operator child;
-    private List<Row> materializedRows;
-    private int currentIndex;
-    private boolean materialized;
+    private final Operator child;
+    private final BufferManager bufferManager;
+    private final String TEMP_FILE_NAME = "__temp__";
+    private final int PROJECTED_ROW_LENGTH = 19; // movieId(9) + personId(10)
 
-    public ProjectionOperator(Operator child) {
+    private final List<Integer> tempPageIds = new ArrayList<>();
+    private int currentPageIndex = 0;
+    private int currentRid = 0;
+    private boolean materialized = false;
+
+    public ProjectionOperator(Operator child, BufferManager bufferManager) {
         this.child = child;
-        this.materializedRows = new ArrayList<>();
-        this.currentIndex = 0;
-        this.materialized = false;
+        this.bufferManager = bufferManager;
     }
 
     @Override
@@ -24,32 +27,56 @@ public class ProjectionOperator implements Operator {
         if (!materialized) {
             materialize();
         }
-        if (currentIndex >= materializedRows.size()) {
-            return null;
+
+        while (currentPageIndex < tempPageIds.size()) {
+            Page page = bufferManager.getPage(tempPageIds.get(currentPageIndex), TEMP_FILE_NAME);
+            if (currentRid < page.height()) {
+                return page.getRow(currentRid++);
+            } else {
+                bufferManager.unpinPage(tempPageIds.get(currentPageIndex), TEMP_FILE_NAME);
+                currentPageIndex++;
+                currentRid = 0;
+            }
         }
-        return materializedRows.get(currentIndex++);
+
+        return null;
     }
 
     @Override
     public void close() {
         child.close();
-        materializedRows.clear();
+        for (int pageId : tempPageIds) {
+            bufferManager.unpinPage(pageId, TEMP_FILE_NAME);
+        }
+        tempPageIds.clear();
     }
 
     private void materialize() {
+        Page currentPage = bufferManager.createPage(TEMP_FILE_NAME, PROJECTED_ROW_LENGTH);
+        int currentPageId = currentPage.getId();
+        tempPageIds.add(currentPageId);
+
         while (true) {
             Row row = child.next();
-            if (row == null) {
-                break;
-            }
-            // movieId starts at 0, length 9
-            byte[] movieId = row.getAttribute(0, 9);
-            // personId starts at 9, length 10
-            byte[] personId = row.getAttribute(9, 10);
+            if (row == null) break;
 
-            Row projectedRow = new Row(movieId, personId); // Create new Row with just movieId and personId
-            materializedRows.add(projectedRow);
+            byte[] movieId = row.getAttribute(0, 9);
+            byte[] personId = row.getAttribute(9, 10);
+            Row projectedRow = new Row(movieId, personId);
+
+            int inserted = currentPage.insertRow(projectedRow);
+            if (inserted == -1) {
+                bufferManager.unpinPage(currentPageId, TEMP_FILE_NAME);
+                currentPage = bufferManager.createPage(TEMP_FILE_NAME, PROJECTED_ROW_LENGTH);
+                currentPageId = currentPage.getId();
+                tempPageIds.add(currentPageId);
+                currentPage.insertRow(projectedRow);
+            }
+
+            bufferManager.markDirty(currentPageId, TEMP_FILE_NAME);
         }
+
+        bufferManager.unpinPage(currentPageId, TEMP_FILE_NAME);
         materialized = true;
     }
 }
