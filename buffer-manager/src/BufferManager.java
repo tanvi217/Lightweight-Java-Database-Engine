@@ -92,7 +92,7 @@ public abstract class BufferManager {
     public Page getPage(int pageId) { return getPage(pageId, defaultFileTitle); }
     public Page createPage() { return createPage(defaultFileTitle, Constants.IMDB_ROW_LENGTH); }
     public void markDirty(int pageId) { markDirty(pageId, defaultFileTitle); }
-    public void markClean(int pageId) { markDirty(pageId, defaultFileTitle); }
+    public void markClean(int pageId) { markClean(pageId, defaultFileTitle); }
     public void unpinPage(int pageId) { unpinPage(pageId, defaultFileTitle); }
 
 }
