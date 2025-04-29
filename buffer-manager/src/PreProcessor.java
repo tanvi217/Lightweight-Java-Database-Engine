@@ -8,8 +8,8 @@ public class PreProcessor {
         BufferManager bm = new LRUBufferManager(250);
 
         System.out.println("Loading tables...");
-
-        loadMovies(bm, Constants.IMDB_TSV_FILE, true, false);
+        loadMovies(bm, "data//title.basics.tsv", true, false);
+        //loadMovies(bm, Constants.IMDB_TSV_FILE, true, false);
         loadWorkedOn(bm, Constants.IMDB_WORKED_ON_TSV_FILE, true); // TODO: remove limitProcessingForDebug
         loadPeople(bm, Constants.IMDB_PEOPLE_TSV_FILE, false);
 
@@ -64,10 +64,12 @@ public class PreProcessor {
 
         System.out.println("Last 5 Movies rows:");
         for (Row r : lastFive) System.out.println(r.toString());
-
+        for(Row r : lastFive){
+            System.out.println(r.getAttribute(skipped, rowLen));
+        }
         return rows;
     }
-
+    
     private static int loadWorkedOn(BufferManager bm, String path, boolean limitProcessingForDebug) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(path));
         br.readLine(); // skip header

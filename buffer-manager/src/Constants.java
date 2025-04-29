@@ -15,7 +15,11 @@ public class Constants {
     public static final int WORKEDON_CATEGORY_SIZE = 10; // category size: 10
     public static final int PERSON_ID_SIZE = 10; // personId size: 10
     public static final int PERSON_NAME_SIZE = 105; // personName size: 105
+    //changing some stuff temporarily, here is the original
+    /* 
     public static final String DATA_DIRECTORY = "../data/";
+    */
+    public static final String DATA_DIRECTORY = "data/";
     public static final String IMDB_TSV_FILE = DATA_DIRECTORY + "title.basics.tsv";
     public static final String IMDB_WORKED_ON_TSV_FILE = DATA_DIRECTORY + "title.principals.tsv";
     public static final String IMDB_PEOPLE_TSV_FILE = DATA_DIRECTORY + "name.basics.tsv";
