@@ -13,7 +13,7 @@ public class CreateIndex {
 
         if (!testTitleIndex) {
             // TestC2 - create index on movieId
-            BufferBTree<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 0, false);
+            BTree<String> movieIdIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 0, false);
 
             // TestC3 - Verify index on movieId
             IndexTests.verifyIndex(movieIdIndexBTree, bufferManager, "tt0000137", Constants.MOVIE_ID_START_BYTE, 9);
@@ -29,13 +29,13 @@ public class CreateIndex {
             IndexTests.compareRangeSearch(movieIdIndexBTree, bufferManager, rangesIds, 0, 9, totalRowsInTable);
 
             // TestP3 - Keeping initial pages pinned
-            BufferBTree<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 10, false);
+            BTree<String> movieIdIndexBTreePinned = IndexTests.CreateIndex(bufferManager, 9, Constants.MOVIE_ID_START_BYTE, 9, 10, false);
 
             IndexTests.compareRangeSearch(movieIdIndexBTreePinned, bufferManager, rangesIds, 0, 9, totalRowsInTable);
         }
         else {
             // TestC1 - create index on title
-            BufferBTree<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_START_BYTE, 30, 0, false);
+            BTree<String> titleIndexBTree = IndexTests.CreateIndex(bufferManager, 9, Constants.TITLE_START_BYTE, 30, 0, false);
 
             // TestC3 - Verify index on title
             IndexTests.verifyIndex(titleIndexBTree, bufferManager, "Coney Island", Constants.TITLE_START_BYTE, 30);
@@ -53,7 +53,7 @@ public class CreateIndex {
             IndexTests.compareRangeSearch(titleIndexBTree, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
 
             // TestP3 - Keeping initial pages pinned
-            BufferBTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_START_BYTE, 30, 10, false);
+            BTree<String> titleIndexBTreePinned = IndexTests.CreateIndex(bufferManager,30,  Constants.TITLE_START_BYTE, 30, 10, false);
 
             IndexTests.compareRangeSearch(titleIndexBTreePinned, bufferManager, rangesMovieTitle, Constants.TITLE_START_BYTE, 30, totalRowsInTable);
         }
@@ -72,10 +72,6 @@ public class CreateIndex {
             int skippedMovies = 0;
 
             while (curRow != null) {
-
-                if (rowsProcessed == 20000) {
-                    break;
-                }
                 
                 if (currentPage.isFull()) {
                     bf.unpinPage(currentPage.getId(), "imdb");

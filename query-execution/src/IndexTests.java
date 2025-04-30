@@ -5,8 +5,8 @@ import java.util.List;
 
 public class IndexTests {
 
-    public static BufferBTree<String> CreateIndex(BufferManager bm, int bytesInKey, int attS, int attL, int pinnedPageDepth, boolean debugPrinting) {
-        BufferBTree<String> btree = new BufferBTree<String>(bm, bytesInKey, pinnedPageDepth, debugPrinting);
+    public static BTree<String> CreateIndex(BufferManager bm, int bytesInKey, int attS, int attL, int pinnedPageDepth, boolean debugPrinting) {
+        BTree<String> btree = new TempBufferBTree<String>(bm, bytesInKey, debugPrinting);
         int pageId = 0;
 
         while (true) {
@@ -36,7 +36,7 @@ public class IndexTests {
         return btree;
     }
 
-    public static void verifyIndex(BufferBTree<String> bTreeIndex, BufferManager bm, String key, int attS, int attL) {
+    public static void verifyIndex(BTree<String> bTreeIndex, BufferManager bm, String key, int attS, int attL) {
         System.out.println("\nVerifying index for key: " + key + " at attribute  starting at byte: " + attS);
         Iterator<Rid> rids = bTreeIndex.search(key);
 
@@ -61,7 +61,7 @@ public class IndexTests {
         }
     }
 
-    public static void verifyRange(BufferBTree<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attS, int attL) {
+    public static void verifyRange(BTree<String> bTreeIndex, BufferManager bm, String startKey, String endKey, int attS, int attL) {
         System.out.println("\nVerifying index for range: " + startKey + ", " + endKey + " at attribute  starting at byte: " + attS);
 
         Iterator<Rid> rids = bTreeIndex.rangeSearch(startKey.trim(), endKey.trim());
@@ -88,7 +88,7 @@ public class IndexTests {
         }
     }
 
-    public static void compareRangeSearch(BufferBTree<String> bTreeIndex, BufferManager bm, String[][] ranges, int attS, int attL, int totalRowsInTable) {
+    public static void compareRangeSearch(BTree<String> bTreeIndex, BufferManager bm, String[][] ranges, int attS, int attL, int totalRowsInTable) {
         List<Double> selectivities = new ArrayList<>();
         List<Double> scanTimes = new ArrayList<>();
         List<Double> indexTimes = new ArrayList<>();
