@@ -1,5 +1,5 @@
 // WorkedOn (movieId: char(9), personId: char(10), category: char(20))
-public class WorkedOn extends Schema {
+public class WorkedOn extends Relation {
 
     public static int[] movieId = {0, 9};
     public static int[] personId = {9, 19};

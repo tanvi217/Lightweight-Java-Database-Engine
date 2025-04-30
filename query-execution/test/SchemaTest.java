@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.Before;
@@ -14,9 +15,9 @@ public class SchemaTest {
 
     private static int numRows = 1000;
     private BufferManager bm;
-    private Schema movies;
-    private Schema workedOn;
-    private Schema people;
+    private Relation movies;
+    private Relation workedOn;
+    private Relation people;
 
     public static String randomString(int length) {
         Random random = new Random();
@@ -30,10 +31,10 @@ public class SchemaTest {
 
     // used to generate a row for testing purposes.
     // assumes all attributes are at least 9 bytes
-    private Row getTestRow(Schema sch, int pid, int sid) {
-        ByteBuffer dataBuffer = ByteBuffer.allocate(sch.length);
-        for (int i = 0; i < sch.ranges.length; ++i) {
-            int[] range = sch.ranges[i];
+    private Row getTestRow(Relation sch, int pid, int sid) {
+        ByteBuffer dataBuffer = ByteBuffer.allocate(sch.bytesInRow);
+        for (int i = 0; i < sch.attrRanges.length; ++i) {
+            int[] range = sch.attrRanges[i];
             dataBuffer.position(range[0]);
             String filler = randomString(range[1] - range[0] - 9); // number of bytes before 8 byte suffix
             dataBuffer.put(filler.getBytes(StandardCharsets.UTF_8));
@@ -45,11 +46,13 @@ public class SchemaTest {
     }
 
     // adds enough pages to hold the specified number of rows
-    private void populateTestRelation(Schema sch) {
+    private void populateTestRelation(Relation sch) {
         Page p = sch.createPage();
         int sid = 0;
         for (int i = 0; i < numRows; ++i) {
             if (p.isFull()) {
+                System.out.println("Page full, sid: " + sid + " Schema: " + sch);
+                System.out.println(p);
                 sch.unpinPage(p.getId());
                 p = sch.createPage();
                 sid = 0;
@@ -81,8 +84,11 @@ public class SchemaTest {
         String testKey = "TestRid1";
         bt.insert(testKey, testRid);
         Page p = workedOn.getPage(pid);
+        System.out.println(bm);
         for (int i = 0; i < numRows; ++i) {
             if (sid >= p.height()) {
+                System.out.println("Reached WorkedOn page end, sid: " + sid);
+                System.out.println(p);
                 workedOn.unpinPage(pid);
                 ++pid;
                 p = workedOn.getPage(pid);
@@ -92,6 +98,7 @@ public class SchemaTest {
             bt.insert(row.getString(WorkedOn.category), new Rid(pid, sid));
             ++sid;
         }
+        workedOn.unpinPage(pid);
         Iterator<Rid> result = bt.search(testKey);
         assertTrue("Search should find previously inserted Rid.", result.hasNext());
         assertEquals("Result should contain previously inserted page id.", testRid.getPageId(), result.next().getPageId());

@@ -84,6 +84,10 @@ public abstract class BufferManager {
      */
     abstract void force();
 
+    abstract int getPageCount(String fileTitle);
+
+    abstract void setPageCount(int pageCount, String fileTitle);
+
     /*
      * These methods preserve the BufferManager API from Lab 1, passing a randomly
      * generated default file title. The row length used in createPage is the

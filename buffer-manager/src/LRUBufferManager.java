@@ -169,6 +169,8 @@ public class LRUBufferManager extends BufferManager {
             }
         }
 
+        fileToWrite[frameIndex] = newPageFilename;
+
         boolean newPageIsEmpty = rowLength != 0;
         if (!newPageIsEmpty) {
             readPageFromDisk(newPageId, frameIndex);
@@ -178,7 +180,6 @@ public class LRUBufferManager extends BufferManager {
         int newPageKey = getPageKey(newPageId, newPageFilename);
         pageTable.put(newPageKey, frameIndex);
         bufferPages[frameIndex] = getPageObject(newPageId, frameIndex, rowLength);
-        fileToWrite[frameIndex] = newPageFilename;
         isDirty[frameIndex] = newPageIsEmpty; // newly created page is marked dirty
         pinCount[frameIndex] = 1;
 
@@ -349,6 +350,16 @@ public class LRUBufferManager extends BufferManager {
             isDirty[i] = false;
             pinCount[i] = 0;
         }
+    }
+
+    @Override
+    int getPageCount(String fileTitle) {
+        return numPagesInFile.getOrDefault(fileTitle, 0);
+    }
+
+    @Override
+    void setPageCount(int pageCount, String fileTitle) {
+        numPagesInFile.put(fileTitle, pageCount);
     }
 
 }
