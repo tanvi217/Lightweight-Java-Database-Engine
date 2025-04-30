@@ -96,7 +96,7 @@ public class TabularPage implements Page {
         }
         int rowStart = pageStart + rowId * rowLength;
         buffer.position(rowStart);
-        buffer.put(row.getRange(0, rowLength)); // write data to buffer
+        buffer.put(row.getBytes(rowLength)); // write data to buffer
         rows[rowId] = row;
     }
 

@@ -53,6 +53,10 @@ public class Row {
         return dataBuffer;
     }
 
+    public byte[] getBytes(int bytesInRow) {
+        return Arrays.copyOf(dataBuffer.array(), bytesInRow);
+    }
+
     public String getString(int... range) {
         return StandardCharsets.UTF_8.decode(getRange(range)).toString();
     }
