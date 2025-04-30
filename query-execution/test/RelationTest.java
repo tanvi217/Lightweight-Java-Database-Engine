@@ -5,13 +5,12 @@ import static org.junit.Assert.assertTrue;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
 
 import org.junit.Before;
 import org.junit.Test;
 
-public class SchemaTest {
+public class RelationTest {
 
     private static int numRows = 1000;
     private BufferManager bm;
@@ -51,8 +50,6 @@ public class SchemaTest {
         int sid = 0;
         for (int i = 0; i < numRows; ++i) {
             if (p.isFull()) {
-                System.out.println("Page full, sid: " + sid + " Schema: " + sch);
-                System.out.println(p);
                 sch.unpinPage(p.getId());
                 p = sch.createPage();
                 sid = 0;
@@ -66,9 +63,9 @@ public class SchemaTest {
     @Before
     public void initializeRelations() { // runs before each test case
         bm = new LRUBufferManager(40);
-        movies = new Movies(bm);
-        workedOn = new WorkedOn(bm);
-        people = new People(bm);
+        movies = new Movies(bm, true);
+        workedOn = new WorkedOn(bm, true);
+        people = new People(bm, true);
         populateTestRelation(movies);
         populateTestRelation(workedOn);
         populateTestRelation(people);
@@ -84,11 +81,8 @@ public class SchemaTest {
         String testKey = "TestRid1";
         bt.insert(testKey, testRid);
         Page p = workedOn.getPage(pid);
-        System.out.println(bm);
         for (int i = 0; i < numRows; ++i) {
             if (sid >= p.height()) {
-                System.out.println("Reached WorkedOn page end, sid: " + sid);
-                System.out.println(p);
                 workedOn.unpinPage(pid);
                 ++pid;
                 p = workedOn.getPage(pid);
@@ -117,7 +111,7 @@ public class SchemaTest {
             ByteBuffer nineBytes = row.getRange(WorkedOn.movieId);
             assertEquals("Test row should contain page id", pageId, nineBytes.getInt());
             assertEquals("Test row should contain slot id", rid.getSlotId(), nineBytes.getInt());
-            System.out.println(category);
+            System.out.println(category); // printing all random strings that were alphabetically between "g" and "gg"
             workedOn.unpinPage(target.getId());
         }
     }

@@ -152,23 +152,4 @@ public class TabularPage implements Page {
         return info;
     }
 
-    /**
-     * If the passed byte array's length is less than the given size, a new array
-     * padded with zeros is returned. If the array is too long, it is trimmed to
-     * size.
-     */
-    private byte[] toSize(byte[] arr, int size) {
-        if (arr.length == size) {
-            return arr;
-        }
-
-        int contentSize = arr.length < size ? arr.length : size;
-        byte[] resized = new byte[size];
-
-        for (int i = 0; i < contentSize; ++i) {
-            resized[i] = arr[i];
-        }
-
-        return resized;
-    }
 }

@@ -5,15 +5,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Relation {
 
-    public String tableTitle;
-    public int[][] attrRanges;
-    public int bytesInRow;
+    public final String tableTitle;
+    public final int[][] attrRanges;
+    public final int bytesInRow;
 
     private BufferManager bm;
     private static String pathToRelationsCSV = Constants.DATA_DIRECTORY + "relations.csv";
+    private static Random rand = new Random(2L);
 
     /**
      * This class is intended to simplify the process of using a buffer manager.
@@ -31,13 +33,16 @@ public class Relation {
      *                      attrRanges is a pair where the second integer is the
      *                      length of the full row.
      * @param bufferManager The buffer manager that this object will make calls to.
+     * @param randomTitle   If true, the given title will be given a random suffix.
      */
-    public Relation(String tableTitle, int[][] attrRanges, BufferManager bufferManager) {
-        this.tableTitle = tableTitle;
+    public Relation(String tableTitle, int[][] attrRanges, BufferManager bufferManager, boolean randomTitle) {
+        this.tableTitle = randomTitle ? tableTitle + rand.nextInt((int) 1e5) : tableTitle;
         this.attrRanges = attrRanges;
         bytesInRow = attrRanges[attrRanges.length - 1][1];
         bm = bufferManager;
     }
+
+    public Relation(String tableTitle, int[][] attrRanges, BufferManager bufferManager) { this(tableTitle, attrRanges, bufferManager, false); }
 
     public Page createPage() {
         return bm.createPage(tableTitle, bytesInRow);
