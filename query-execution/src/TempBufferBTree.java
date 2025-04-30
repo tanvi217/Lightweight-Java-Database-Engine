@@ -83,8 +83,10 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
             dataBuffer.position(bytesInKey);
         } else if (key instanceof ByteBuffer) {
             dataBuffer.put((ByteBuffer) key);
-        } else { // key is byte[]
+        } else if (key instanceof byte[]) {
             dataBuffer.put((byte[]) key);
+        } else {
+            throw new IllegalArgumentException("Key passed to createRow must be null, ByteBuffer, or byte[].");
         }
         for (int attr : data) {
             dataBuffer.putInt(attr);
@@ -106,18 +108,15 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
     // converts strings and integers to byte arrays. If K is neither, use the integer callerKey.hashCode()
     private byte[] getKeyFromComparable(K callerKey) { //.
         if (callerKey instanceof String) {
-            String keyString = ((String) callerKey).toLowerCase();
-            return Arrays.copyOf(keyString.getBytes(StandardCharsets.UTF_8), bytesInKey);
+            String keyString = String.format("%-" + bytesInKey + "s", ((String) callerKey).toLowerCase());
+            return keyString.getBytes(StandardCharsets.UTF_8);
         }
         if (callerKey instanceof Integer) {
             String inBase36 = Integer.toString((Integer) callerKey, 36);
             String atLength = String.format("%" + bytesInKey + "s", inBase36).replace(' ', '0');
             return Arrays.copyOf(atLength.getBytes(StandardCharsets.UTF_8), bytesInKey);
         }
-        if (bytesInKey != 4) {
-            throw new IllegalArgumentException("If the key is not a string or an integer, then the number of bytes in a key must be 4.");
-        }
-        return ByteBuffer.allocate(4).putInt(callerKey.hashCode()).array();
+        throw new IllegalArgumentException("Only String or integer keys are supported in BTree");
     }
 
     // finds the search path to the node containing the start key, and finds matches starting there
@@ -158,7 +157,7 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
     }
 
     // the row with id 0 only begins with a meaningful key when 'node' is a leaf
-    private Row firstMatchingRow(byte[] key, int pid) { //.
+    public Row firstMatchingRow(byte[] key, int pid) { //.
         Page node = getPage(pid);
         if (node.height() < 1) {
             throw new IllegalStateException("Node must have at least one row to match with.");
@@ -319,7 +318,11 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
             }
             ++rowId;
         }
-        target.insertRow(newRow, rowId); // insertRow with rowId argument shifts rows to make space
+        if (rowId == target.height()) { // reached end
+            target.insertRow(newRow);
+        } else {
+            target.insertRow(newRow, rowId); // insertRow with rowId argument shifts rows to make space
+        }
         markDirty(target.getId());
     }
 

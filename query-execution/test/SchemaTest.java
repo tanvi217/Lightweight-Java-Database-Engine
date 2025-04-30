@@ -1,4 +1,6 @@
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +12,7 @@ import org.junit.Test;
 
 public class SchemaTest {
 
-    private static int numRows = 100;
+    private static int numRows = 1000;
     private BufferManager bm;
     private Schema movies;
     private Schema workedOn;
@@ -28,16 +30,16 @@ public class SchemaTest {
 
     // used to generate a row for testing purposes.
     // assumes all attributes are at least 9 bytes
-    private Row getTestRow(Schema sch, int pid, int rid) {
+    private Row getTestRow(Schema sch, int pid, int sid) {
         ByteBuffer dataBuffer = ByteBuffer.allocate(sch.length);
         for (int i = 0; i < sch.ranges.length; ++i) {
             int[] range = sch.ranges[i];
             dataBuffer.position(range[0]);
-            dataBuffer.put((byte) ((char) i));
             String filler = randomString(range[1] - range[0] - 9); // number of bytes before 8 byte suffix
             dataBuffer.put(filler.getBytes(StandardCharsets.UTF_8));
-            dataBuffer.putInt(rid);
             dataBuffer.putInt(pid);
+            dataBuffer.putInt(sid);
+            dataBuffer.put((byte) ('0' + i));
         }
         return new Row(dataBuffer);
     }
@@ -45,12 +47,15 @@ public class SchemaTest {
     // adds enough pages to hold the specified number of rows
     private void populateTestRelation(Schema sch) {
         Page p = sch.createPage();
+        int sid = 0;
         for (int i = 0; i < numRows; ++i) {
             if (p.isFull()) {
                 sch.unpinPage(p.getId());
                 p = sch.createPage();
+                sid = 0;
             }
-            p.insertRow(getTestRow(sch, p.getId(), i));
+            p.insertRow(getTestRow(sch, p.getId(), sid));
+            ++sid;
         }
         sch.unpinPage(p.getId());
     }
@@ -72,6 +77,9 @@ public class SchemaTest {
         BTree<String> bt = new TempBufferBTree<>(bm, bytesInKey);
         int pid = 0;
         int sid = 0;
+        Rid testRid = new Rid(-30, -45); // fake Rid with invalid arguments
+        String testKey = "TestRid1";
+        bt.insert(testKey, testRid);
         Page p = workedOn.getPage(pid);
         for (int i = 0; i < numRows; ++i) {
             if (sid >= p.height()) {
@@ -84,16 +92,27 @@ public class SchemaTest {
             bt.insert(row.getString(WorkedOn.category), new Rid(pid, sid));
             ++sid;
         }
-        Iterator<Rid> result = bt.rangeSearch("2b", "2c");
+        Iterator<Rid> result = bt.search(testKey);
+        assertTrue("Search should find previously inserted Rid.", result.hasNext());
+        assertEquals("Result should contain previously inserted page id.", testRid.getPageId(), result.next().getPageId());
+        result = bt.search("Fake" + testKey);
+        assertFalse("Searching for key which was not inserted should lead to zero results.", result.hasNext());
+        result = bt.rangeSearch("g", "gg");
         while (result.hasNext()) {
             Rid rid = result.next();
-            Page target = workedOn.getPage(rid.getPageId());
-            String category = target.getRow(rid.getSlotId()).getString(WorkedOn.category);
+            int pageId = rid.getPageId();
+            if (pageId < 0) {
+                continue; // found fake pageId from testRid
+            }
+            Page target = workedOn.getPage(pageId);
+            Row row = target.getRow(rid.getSlotId());
+            String category = row.getString(WorkedOn.category);
+            ByteBuffer nineBytes = row.getRange(WorkedOn.movieId);
+            assertEquals("Test row should contain page id", pageId, nineBytes.getInt());
+            assertEquals("Test row should contain slot id", rid.getSlotId(), nineBytes.getInt());
             System.out.println(category);
             workedOn.unpinPage(target.getId());
         }
-        result = bt.search("1");
-        assertFalse("h", result.hasNext());
     }
 
 }
