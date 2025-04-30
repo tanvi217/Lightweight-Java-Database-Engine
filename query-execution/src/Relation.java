@@ -89,7 +89,7 @@ public class Relation {
         List<String> lines = new ArrayList<>();
         boolean addLine = true;
         try (BufferedReader br = new BufferedReader(new FileReader(pathToRelationsCSV))) {
-            br.readLine(); // skipping the header row
+            // don't skip the header row
             while (true) {
                 String line = br.readLine();
                 if (line == null) {

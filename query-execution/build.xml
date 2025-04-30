@@ -60,7 +60,7 @@
         <delete>
             <fileset dir="${labs.qe.build}"/>
             <fileset dir="${labs.qe.test}" includes="TEST-*.txt"/>
-            <fileset dir="${labs.data}" includes="temp-*.bin"/>
+            <fileset dir="${labs.data}" includes="*.bin"/>
         </delete>
     </target>
 
