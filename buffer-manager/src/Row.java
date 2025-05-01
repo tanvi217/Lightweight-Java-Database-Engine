@@ -35,36 +35,41 @@ public class Row {
         length = data.length;
     }
 
+    public int length() {
+        return length;
+    }
+
     private ByteBuffer select(int[] range) {
         int start = (range.length < 1) ? 0 : range[0];
         int end = (range.length < 2) ? length : range[1];
         if (0 > start || start > end || end > length) {
-            throw new IllegalArgumentException("Invalid Range for Row: [" + start + ", " + end + "]");
+            throw new IllegalArgumentException("Invalid Range for Row: [" + start + ", " + end + ")");
         }
         dataBuffer.position(startIndex + start);
         dataBuffer.limit(startIndex + end);
         return dataBuffer;
     }
 
-    public ByteBuffer getRange(int... range) {
-        return select(range).duplicate();
+    // prefer getRange over this
+    public byte[] getAttribute(int attS, int attL) {
+        return Arrays.copyOfRange(dataBuffer.array(), startIndex + attS, startIndex + attS + attL);
     }
 
-    public String getString(int... range) {
-        return StandardCharsets.UTF_8.decode(select(range)).toString();
+    public ByteBuffer getRange(int... range) {
+        return select(range).duplicate();
     }
 
     public int getInt(int... range) {
         return select(range).getInt();
     }
 
-    public int length() {
-        return length;
+    public String getString(int... range) {
+        return StandardCharsets.UTF_8.decode(select(range)).toString();
     }
 
     @Override
     public String toString() {
-        return getString(); // range defaults to {0, length}
+        return getString(); // range defaults to [0, length)
     }
     
 }
