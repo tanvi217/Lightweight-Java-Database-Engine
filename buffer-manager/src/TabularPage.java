@@ -69,10 +69,9 @@ public class TabularPage implements Page {
         }
 
         int rowStart = pageStart + rowId * rowLength;
-        byte[] data = new byte[rowLength];
         buffer.position(rowStart);
-        buffer.get(data); // retrieve data from buffer
-        rows[rowId] = new Row(data);
+        buffer.limit(rowLength); // position and limit will be recorded in Row constructor, so buffer
+        rows[rowId] = new Row(buffer);
 
         return rows[rowId];
     }
