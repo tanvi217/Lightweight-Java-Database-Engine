@@ -54,21 +54,12 @@ public class Row implements Comparable<Row> {
         return dataBuffer;
     }
 
-    public byte[] getBytes(int bytesInRow) { // is this used?
-        return Arrays.copyOf(dataBuffer.array(), bytesInRow);
-    }
-
     public String getString(int... range) {
         return StandardCharsets.UTF_8.decode(getRange(range)).toString();
     }
 
     public int getInt(int... range) {
         return getRange(range).getInt();
-    }
-
-    public int compareTo(byte[] key, int... range) {
-        range = verifyRange(range);
-        return Arrays.compare(dataBuffer.array(), range[0], range[1], key, 0, key.length);
     }
 
     @Override
