@@ -3,13 +3,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class Row {
+public class Row implements Comparable<Row> {
 
     public byte[] data;
     private ByteBuffer dataBuffer;
 
-    public Row(ByteBuffer data) {
-        dataBuffer = data;
+    public Row(ByteBuffer dataBuffer) {
+        data = dataBuffer.array();
+        this.dataBuffer = dataBuffer;
     }
 
     public Row(byte[]... columns) {
@@ -53,7 +54,7 @@ public class Row {
         return dataBuffer;
     }
 
-    public byte[] getBytes(int bytesInRow) {
+    public byte[] getBytes(int bytesInRow) { // is this used?
         return Arrays.copyOf(dataBuffer.array(), bytesInRow);
     }
 
@@ -68,6 +69,11 @@ public class Row {
     public int compareTo(byte[] key, int... range) {
         range = verifyRange(range);
         return Arrays.compare(dataBuffer.array(), range[0], range[1], key, 0, key.length);
+    }
+
+    @Override
+    public int compareTo(Row row) {
+        return getRange().compareTo(row.getRange());
     }
 
     @Override
