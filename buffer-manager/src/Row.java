@@ -35,32 +35,27 @@ public class Row {
         length = data.length;
     }
 
-    private int[] verifyRange(int[] range) {
-        if (range.length == 0) {
-            return new int[] {0, length};
+    private ByteBuffer select(int[] range) {
+        int start = (range.length < 1) ? 0 : range[0];
+        int end = (range.length < 2) ? length : range[1];
+        if (0 > start || start > end || end > length) {
+            throw new IllegalArgumentException("Invalid Range for Row: [" + start + ", " + end + "]");
         }
-        if (range.length == 1 && 0 <= range[0] && range[0] <= length) {
-            return new int[] {range[0], length};
-        }
-        if (range.length < 2 || range[0] < 0 || range[1] > length || range[1] < range[0]) {
-            throw new IllegalArgumentException("Invalid Range for Row");
-        }
-        return range;
-    }
-
-    public ByteBuffer getRange(int... range) {
-        range = verifyRange(range);
-        dataBuffer.position(startIndex + range[0]);
-        dataBuffer.limit(startIndex + range[1]);
+        dataBuffer.position(startIndex + start);
+        dataBuffer.limit(startIndex + end);
         return dataBuffer;
     }
 
+    public ByteBuffer getRange(int... range) {
+        return select(range).duplicate();
+    }
+
     public String getString(int... range) {
-        return StandardCharsets.UTF_8.decode(getRange(range)).toString();
+        return StandardCharsets.UTF_8.decode(select(range)).toString();
     }
 
     public int getInt(int... range) {
-        return getRange(range).getInt();
+        return select(range).getInt();
     }
 
     public int length() {
@@ -68,13 +63,8 @@ public class Row {
     }
 
     @Override
-    public int compareTo(Row row) {
-        return getRange().compareTo(row.getRange());
-    }
-
-    @Override
     public String toString() {
-        return getString(); // range defaults to {0, dataBuffer.capacity()}
+        return getString(); // range defaults to {0, length}
     }
     
 }
