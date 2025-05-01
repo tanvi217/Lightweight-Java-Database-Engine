@@ -40,20 +40,20 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
 
     @Override
     public Iterator<Rid> search(K callerKey) { //.
-        byte[] key = toComparableByteArray(callerKey, bytesInKey); // convert from int, String, etc.. to byte[]
+        ByteBuffer key = toComparableBytes(callerKey, bytesInKey); // convert from int, String, etc.. to ByteBuffer
         return internalRangeSearch(key, key);
     }
 
     @Override
     public Iterator<Rid> rangeSearch(K callerStartKey, K callerEndKey) { //.
-        byte[] startKey = toComparableByteArray(callerStartKey, bytesInKey);
-        byte[] endKey = toComparableByteArray(callerEndKey, bytesInKey);
+        ByteBuffer startKey = toComparableBytes(callerStartKey, bytesInKey);
+        ByteBuffer endKey = toComparableBytes(callerEndKey, bytesInKey);
         return internalRangeSearch(startKey, endKey);
     }
 
     @Override
     public void insert(K callerKey, Rid rid) { //.
-        byte[] key = toComparableByteArray(callerKey, bytesInKey);
+        ByteBuffer key = toComparableBytes(callerKey, bytesInKey);
         int[] searchPath = getSearchPath(key);
         Row newRow = createRow(key, rid.getPageId(), rid.getSlotId());
         insertAlongPath(newRow, searchPath, treeDepth - 1);
@@ -105,8 +105,22 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         markDirty(leaf.getId());
     }
 
-    // converts strings and integers to byte arrays. If K is neither, use the integer callerKey.hashCode()
-    public static byte[] toComparableByteArray(Object input, int length) { //.
+    // converts strings and integers to byte buffers
+    public static ByteBuffer toComparableBytes(Object input, int length) { //..
+        if (input instanceof ByteBuffer) {
+            ByteBuffer src = (ByteBuffer) input;
+            if (src.remaining() == length) {
+                return src;
+            }
+            if (src.remaining() > length) {
+                src.limit(src.position() + length);
+                return src; // remaining should now be equal to length
+            }
+            ByteBuffer dst = ByteBuffer.allocate(length);
+            dst.put(src);
+            dst.clear();
+            return dst;
+        }
         if (input instanceof String) {
             String str = (String) input;
             if (str.length() > length) {
@@ -116,7 +130,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
             if (bytes.length != str.length()) {
                 throw new IllegalArgumentException("ByteKeyBTree doesn't support multi-byte character encodings.");
             }
-            return Arrays.copyOf(bytes, length);
+            return ByteBuffer.wrap(Arrays.copyOf(bytes, length));
         }
         if (input instanceof Integer) {
             int num = (int) input;
@@ -130,29 +144,23 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
                 Arrays.fill(leadingZeros, '0');
                 inBase36 = new String(leadingZeros) + inBase36;
             }
-            return inBase36.getBytes(StandardCharsets.UTF_8);
-        }
-        if (input instanceof ByteBuffer) {
-            ByteBuffer src = (ByteBuffer) input;
-            byte[] dst = new byte[length];
-            if (src.remaining() < length) {
-                src.get(dst, 0, src.remaining());
-            } else {
-                src.get(dst);
+            byte[] bytes = inBase36.getBytes(StandardCharsets.UTF_8);
+            if (bytes.length != length) {
+                throw new IllegalStateException("Unexpected error when converting integer to byte array.");
             }
-            return dst;
+            return ByteBuffer.wrap(bytes);
         }
-        throw new IllegalArgumentException("Only String or integer keys are supported in BTree");
+        throw new IllegalArgumentException("Only String, integer, or ByteBuffer keys are supported in ByteKeyBTree");
     }
 
     // finds the search path to the node containing the start key, and finds matches starting there
-    private Iterator<Rid> internalRangeSearch(byte[] startKey, byte[] endKey) { //.
+    private Iterator<Rid> internalRangeSearch(ByteBuffer startKey, ByteBuffer endKey) { //..
         int leafPid = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
         return getLeafMatches(leafPid, startKey, endKey).iterator();
     }
 
     // starts at root, and follows pointers in the tree to the leaf page containing the first occurence of the key
-    private int[] getSearchPath(byte[] key) { //.
+    private int[] getSearchPath(ByteBuffer key) { //..
         int[] searchPath = new int[treeDepth];
         int currentPid = rootPid;
         int depthIndex = 0;
@@ -183,7 +191,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     }
 
     // the row with id 0 only begins with a meaningful key when 'node' is a leaf
-    public Row firstMatchingRow(byte[] key, int pid) { //.
+    public Row firstMatchingRow(ByteBuffer key, int pid) { //.
         Page node = getPage(pid);
         if (node.height() < 1) {
             throw new IllegalStateException("Node must have at least one row to match with.");
@@ -202,7 +210,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return match;
     }
 
-    private List<Rid> getLeafMatches(int leafPid, byte[] startKey, byte[] endKey) { //.
+    private List<Rid> getLeafMatches(int leafPid, ByteBuffer startKey, ByteBuffer endKey) { //.
         List<Rid> matches = new ArrayList<>();
         Page leaf;
 
@@ -327,8 +335,11 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return rightPid;
     }
 
-    private int compareKeys(byte[] keyA, Row keyRowB) { //.
-        return -keyRowB.compareTo(keyA, keyRange);
+    private int compareKeys(ByteBuffer keyA, Row keyRowB) { //.
+        if (keyA.remaining() != bytesInKey) {
+            throw new IllegalArgumentException("ByteBuffer key must have the correct number of bytes.");
+        }
+        return keyA.compareTo(keyRowB.getRange(keyRange));
     }
 
     private int compareKeys(Row keyRowA, Row keyRowB) { //.
