@@ -8,7 +8,7 @@ public class TabularPage implements Page {
     private ByteBuffer buffer;
     private int maxRows;
     private int pageStart; // index of first byte of this page in buffer
-    private int nextRowIdLocation;
+    public int nextRowIdLocation;
     private int rowLengthLocation;
     private Row[] rows;
     private int nextRowId; // equal to the number of full rows in this page
@@ -45,6 +45,7 @@ public class TabularPage implements Page {
         this.pageStart = pageStart;
         rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
         nextRowIdLocation = rowLengthLocation + 4; // one int over
+        buffer.clear();
         if (bytesInRow == 0) {
             nextRowId = buffer.getInt(nextRowIdLocation);
             rowLength = buffer.getInt(rowLengthLocation);
@@ -58,46 +59,42 @@ public class TabularPage implements Page {
         rows = new Row[maxRows];
     }
 
+    private Row selectRow(int rowId) {
+        int startIndex = pageStart + rowId * rowLength;
+        buffer.clear();
+        buffer.position(startIndex);
+        buffer.limit(startIndex + rowLength);
+        return new Row(buffer);
+    }
+
     @Override
     public Row getRow(int rowId) {
         if (rowId < 0 || rowId >= nextRowId) {
-            throw new IllegalArgumentException("Row index out of bounds.");
+            throw new IllegalArgumentException("Row index " + rowId + " out of bounds.");
         }
-
-        if (rows[rowId] != null) {
-            return rows[rowId];
+        if (rows[rowId] == null) {
+            rows[rowId] = selectRow(rowId);
         }
-
-        int rowStart = pageStart + rowId * rowLength;
-        byte[] data = new byte[rowLength];
-        buffer.position(rowStart);
-        buffer.get(data); // retrieve data from buffer
-        rows[rowId] = new Row(data);
-
         return rows[rowId];
     }
 
+    // modifies an existing row, based on its rowId and replaces it with the given Row
     @Override
-    public int insertRow(Row row) {
-        if (nextRowId >= maxRows) {
-            return -1;
-        }
-        int rowId = nextRowId;
-        ++nextRowId;
-        overwriteRow(row, rowId);
-        buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
-        return rowId;
-    }
-
-    //modifies an existing row, based on its rowId and replaces it with the given Row
     public void overwriteRow(Row row, int rowId){
         if (rowId < 0 || rowId >= nextRowId){
-            throw new IllegalArgumentException("Row index out of bounds.");
+            throw new IllegalArgumentException("Row index " + rowId + " out of bounds.");
         }
         int rowStart = pageStart + rowId * rowLength;
+        buffer.clear();
         buffer.position(rowStart);
-        buffer.put(row.getBytes(rowLength)); // write data to buffer
-        rows[rowId] = row;
+        if (row.length() >= rowLength) {
+            buffer.put(row.getRange(0, rowLength)); // insert full or truncated row
+        } else { // passed row is too short, fill rest with zeros
+            buffer.put(row.getRange()); // insert full range of row (no arguments defaults to full range)
+            byte[] trailingZeros = new byte[rowLength - row.length()];
+            buffer.put(trailingZeros);
+        }
+        rows[rowId] = selectRow(rowId);
     }
 
     @Override
@@ -105,17 +102,28 @@ public class TabularPage implements Page {
         if (nextRowId >= maxRows) {
             throw new IllegalArgumentException("No room to insert row.");
         }
-        if (rowId < 0 || rowId >= nextRowId){
+        if (rowId < 0 || rowId > nextRowId){ // rowId can equal nextRowId during insertion
             throw new IllegalArgumentException("Row index out of bounds.");
         }
-        Row rowToInsert = row;
-        while (rowId < nextRowId) {
-            Row rowToMove = getRow(rowId);
-            overwriteRow(rowToInsert, rowId);
-            rowToInsert = rowToMove;
-            ++rowId;
+        int dstRowId = nextRowId;
+        ++nextRowId; // increment since we are inserting. This needs to be done here so that dstRowId is a valid argument to overwriteRow
+        buffer.clear();
+        buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
+        while (dstRowId > rowId) {
+            overwriteRow(selectRow(dstRowId - 1), dstRowId);
+            --dstRowId;
         }
-        insertRow(rowToInsert);
+        overwriteRow(row, dstRowId); // i == rowId
+    }
+
+    @Override
+    public int insertRow(Row row) {
+        if (nextRowId >= maxRows) {
+            return -1; // insertion would exceed max number of rows
+        }
+        int rowId = nextRowId;
+        insertRow(row, rowId); // increments nextRowId
+        return rowId;
     }
 
     public int height(){
@@ -128,6 +136,7 @@ public class TabularPage implements Page {
 
     public void setHeight(int height){
         nextRowId = height;
+        buffer.clear();
         buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
     }
 
@@ -144,6 +153,7 @@ public class TabularPage implements Page {
     @Override
     public String toString() {
         int pageBytes = rowLengthLocation + METADATA_INTS * 4 - pageStart;
+        buffer.clear();
         int firstInt = buffer.getInt(pageStart);
         String info = String.format("PAGE  id: %02d  rows: %03d  start-index: %04d  full-length: %d bytes  first-int: %d", pageId, nextRowId, pageStart, pageBytes, firstInt);
         if (nextRowId != buffer.getInt(nextRowIdLocation)) {

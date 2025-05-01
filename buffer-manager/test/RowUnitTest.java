@@ -17,7 +17,7 @@ public class RowUnitTest {
     @Test
     public void testConstructor() {
         //tests that constructor properly saves values.
-        assertArrayEquals("Row data should be correctly initialized", data, row.data);
+        assertArrayEquals("Row data should be correctly initialized", data, row.getAttribute(0, row.length()));
     }
 
     @Test

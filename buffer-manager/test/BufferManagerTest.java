@@ -87,7 +87,7 @@ public class BufferManagerTest {
             assertNotNull(p);
             assertEquals(getIds[i], p.getId());
             Row first = p.getRow(0);
-            int recoveredPageId = ByteBuffer.wrap(first.data).getInt();
+            int recoveredPageId = first.getInt();
             assertEquals(getIds[i], recoveredPageId);
             bm.unpinPage(p.getId());
         }
