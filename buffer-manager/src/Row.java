@@ -3,17 +3,20 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class Row implements Comparable<Row> {
+public class Row {
 
-    public byte[] data;
     private ByteBuffer dataBuffer;
+    private int startIndex;
+    private int length;
 
-    public Row(ByteBuffer dataBuffer) {
-        data = dataBuffer.array();
-        this.dataBuffer = dataBuffer;
+    public Row(ByteBuffer buffer) {
+        dataBuffer = buffer;
+        startIndex = buffer.position();
+        length = buffer.remaining();
     }
 
     public Row(byte[]... columns) {
+        byte[] data;
         if (columns.length == 1) {
             data = columns[0];
         } else {
@@ -28,20 +31,18 @@ public class Row implements Comparable<Row> {
             data = stream.toByteArray();
         }
         dataBuffer = ByteBuffer.wrap(data);
-    }
-
-    public byte[] getAttribute(int attS, int attL) {
-        return Arrays.copyOfRange(data, attS, attS + attL);
+        startIndex = 0;
+        length = data.length;
     }
 
     private int[] verifyRange(int[] range) {
         if (range.length == 0) {
-            return new int[] {0, dataBuffer.capacity()};
+            return new int[] {0, length};
         }
-        if (range.length == 1 && 0 <= range[0] && range[0] <= dataBuffer.capacity()) {
-            return new int[] {range[0], dataBuffer.capacity()};
+        if (range.length == 1 && 0 <= range[0] && range[0] <= length) {
+            return new int[] {range[0], length};
         }
-        if (range.length < 2 || range[0] < 0 || range[1] > dataBuffer.capacity() || range[1] < range[0]) {
+        if (range.length < 2 || range[0] < 0 || range[1] > length || range[1] < range[0]) {
             throw new IllegalArgumentException("Invalid Range for Row");
         }
         return range;
@@ -49,8 +50,8 @@ public class Row implements Comparable<Row> {
 
     public ByteBuffer getRange(int... range) {
         range = verifyRange(range);
-        dataBuffer.position(range[0]);
-        dataBuffer.limit(range[1]);
+        dataBuffer.position(startIndex + range[0]);
+        dataBuffer.limit(startIndex + range[1]);
         return dataBuffer;
     }
 
@@ -60,6 +61,10 @@ public class Row implements Comparable<Row> {
 
     public int getInt(int... range) {
         return getRange(range).getInt();
+    }
+
+    public int length() {
+        return length;
     }
 
     @Override
