@@ -8,7 +8,7 @@ public class TabularPage implements Page {
     private ByteBuffer buffer;
     private int maxRows;
     private int pageStart; // index of first byte of this page in buffer
-    private int nextRowIdLocation;
+    public int nextRowIdLocation;
     private int rowLengthLocation;
     private Row[] rows;
     private int nextRowId; // equal to the number of full rows in this page
@@ -45,6 +45,7 @@ public class TabularPage implements Page {
         this.pageStart = pageStart;
         rowLengthLocation = pageStart + pageLength - METADATA_INTS * 4;
         nextRowIdLocation = rowLengthLocation + 4; // one int over
+        buffer.clear();
         if (bytesInRow == 0) {
             nextRowId = buffer.getInt(nextRowIdLocation);
             rowLength = buffer.getInt(rowLengthLocation);
@@ -60,6 +61,7 @@ public class TabularPage implements Page {
 
     private Row selectRow(int rowId) {
         int startIndex = pageStart + rowId * rowLength;
+        buffer.clear();
         buffer.position(startIndex);
         buffer.limit(startIndex + rowLength);
         return new Row(buffer);
@@ -83,6 +85,7 @@ public class TabularPage implements Page {
             throw new IllegalArgumentException("Row index " + rowId + " out of bounds.");
         }
         int rowStart = pageStart + rowId * rowLength;
+        buffer.clear();
         buffer.position(rowStart);
         if (row.length() >= rowLength) {
             buffer.put(row.getRange(0, rowLength)); // insert full or truncated row
@@ -104,6 +107,7 @@ public class TabularPage implements Page {
         }
         int dstRowId = nextRowId;
         ++nextRowId; // increment since we are inserting. This needs to be done here so that dstRowId is a valid argument to overwriteRow
+        buffer.clear();
         buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
         while (dstRowId > rowId) {
             overwriteRow(selectRow(dstRowId - 1), dstRowId);
@@ -132,6 +136,7 @@ public class TabularPage implements Page {
 
     public void setHeight(int height){
         nextRowId = height;
+        buffer.clear();
         buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
     }
 
@@ -148,6 +153,7 @@ public class TabularPage implements Page {
     @Override
     public String toString() {
         int pageBytes = rowLengthLocation + METADATA_INTS * 4 - pageStart;
+        buffer.clear();
         int firstInt = buffer.getInt(pageStart);
         String info = String.format("PAGE  id: %02d  rows: %03d  start-index: %04d  full-length: %d bytes  first-int: %d", pageId, nextRowId, pageStart, pageBytes, firstInt);
         if (nextRowId != buffer.getInt(nextRowIdLocation)) {

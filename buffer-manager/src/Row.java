@@ -45,6 +45,7 @@ public class Row {
         if (0 > start || start > end || end > length) {
             throw new IllegalArgumentException("Invalid Range for Row: [" + start + ", " + end + ")");
         }
+        dataBuffer.clear();
         dataBuffer.position(startIndex + start);
         dataBuffer.limit(startIndex + end);
         return dataBuffer;
