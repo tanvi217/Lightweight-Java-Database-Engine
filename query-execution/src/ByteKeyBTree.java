@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
+class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
 
     private static int numInstances = 0; // used for creating a unique fileTitle for each new BTree
     private BufferManager bm;
@@ -23,7 +23,7 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
     private int[] firstInt;
     private int[] secondInt;
 
-    public TempBufferBTree(BufferManager bm, int bytesInKey, boolean debugPrinting) { //.
+    public ByteKeyBTree(BufferManager bm, int bytesInKey, boolean debugPrinting) { //.
         this.bm = bm;
         this.bytesInKey = bytesInKey;
         keyRange = new int[] {0, bytesInKey};
@@ -36,24 +36,24 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
         createNewRoot(); // sets treeDepth to 1 and rootPid to correct page ID
     }
 
-    public TempBufferBTree(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, false); }
+    public ByteKeyBTree(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, false); }
 
     @Override
     public Iterator<Rid> search(K callerKey) { //.
-        byte[] key = getKeyFromComparable(callerKey); // convert from int, String, etc.. to byte[]
+        byte[] key = toComparableByteArray(callerKey, bytesInKey); // convert from int, String, etc.. to byte[]
         return internalRangeSearch(key, key);
     }
 
     @Override
     public Iterator<Rid> rangeSearch(K callerStartKey, K callerEndKey) { //.
-        byte[] startKey = getKeyFromComparable(callerStartKey);
-        byte[] endKey = getKeyFromComparable(callerEndKey);
+        byte[] startKey = toComparableByteArray(callerStartKey, bytesInKey);
+        byte[] endKey = toComparableByteArray(callerEndKey, bytesInKey);
         return internalRangeSearch(startKey, endKey);
     }
 
     @Override
     public void insert(K callerKey, Rid rid) { //.
-        byte[] key = getKeyFromComparable(callerKey);
+        byte[] key = toComparableByteArray(callerKey, bytesInKey);
         int[] searchPath = getSearchPath(key);
         Row newRow = createRow(key, rid.getPageId(), rid.getSlotId());
         insertAlongPath(newRow, searchPath, treeDepth - 1);
@@ -106,15 +106,41 @@ class TempBufferBTree<K extends Comparable<K>> implements BTree<K> {
     }
 
     // converts strings and integers to byte arrays. If K is neither, use the integer callerKey.hashCode()
-    private byte[] getKeyFromComparable(K callerKey) { //.
-        if (callerKey instanceof String) {
-            String keyString = String.format("%-" + bytesInKey + "s", ((String) callerKey).toLowerCase());
-            return keyString.getBytes(StandardCharsets.UTF_8);
+    public static byte[] toComparableByteArray(Object input, int length) { //.
+        if (input instanceof String) {
+            String str = (String) input;
+            if (str.length() > length) {
+                str = str.substring(0, length);
+            }
+            byte[] bytes = str.toLowerCase().getBytes(StandardCharsets.UTF_8);
+            if (bytes.length != str.length()) {
+                throw new IllegalArgumentException("ByteKeyBTree doesn't support multi-byte character encodings.");
+            }
+            return Arrays.copyOf(bytes, length);
         }
-        if (callerKey instanceof Integer) {
-            String inBase36 = Integer.toString((Integer) callerKey, 36);
-            String atLength = String.format("%" + bytesInKey + "s", inBase36).replace(' ', '0');
-            return Arrays.copyOf(atLength.getBytes(StandardCharsets.UTF_8), bytesInKey);
+        if (input instanceof Integer) {
+            int num = (int) input;
+            int shift = ((int) Math.pow(36, length) - 2) / 2; // shift so base 36 string is nonnegative
+            if (num > shift + 1 || num < -shift) {
+                throw new IllegalArgumentException("Integer has absolute value too large to be represented with given length.");
+            }
+            String inBase36 = Integer.toString(num + shift, 36);
+            if (inBase36.length() < length) {
+                char[] leadingZeros = new char[length - inBase36.length()];
+                Arrays.fill(leadingZeros, '0');
+                inBase36 = new String(leadingZeros) + inBase36;
+            }
+            return inBase36.getBytes(StandardCharsets.UTF_8);
+        }
+        if (input instanceof ByteBuffer) {
+            ByteBuffer src = (ByteBuffer) input;
+            byte[] dst = new byte[length];
+            if (src.remaining() < length) {
+                src.get(dst, 0, src.remaining());
+            } else {
+                src.get(dst);
+            }
+            return dst;
         }
         throw new IllegalArgumentException("Only String or integer keys are supported in BTree");
     }
