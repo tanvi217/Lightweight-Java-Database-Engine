@@ -5,21 +5,24 @@ import java.util.Arrays;
 
 public class Row {
 
-    private ByteBuffer dataBuffer;
-    private int startIndex;
-    private int length;
+    private static ByteBuffer allocateCopy(ByteBuffer src) {
+        return ByteBuffer.allocate(src.remaining()).put(src).clear();
+    }
 
-    public Row(ByteBuffer buffer) {
-        if (buffer.capacity() > 100) {
-            dataBuffer = ByteBuffer.allocate(buffer.remaining());
-            dataBuffer.put(buffer);
-            startIndex = 0;
-            length = dataBuffer.capacity();
-        } else {
-            dataBuffer = buffer;
-            startIndex = buffer.position();
-            length = buffer.remaining();
-        }
+    private ByteBuffer dataBuffer;
+
+    /**
+     * A row created in this way is a subsection of some potentially larger ByteBuffer. The backing array will be shared unless the boolean 'copy' is true. The new buffer has initial position = 0 and capacity = buffer.remaining()
+     */
+    public Row(ByteBuffer data, boolean copy) {
+        dataBuffer = copy ? allocateCopy(data) : data.slice();
+    }
+
+    /**
+     * The constructor with only a ByteBuffer passed defaults to not copying the backing content.
+     */
+    public Row(ByteBuffer data) {
+        dataBuffer = data.slice();
     }
 
     public Row(byte[]... columns) {
@@ -38,33 +41,39 @@ public class Row {
             data = stream.toByteArray();
         }
         dataBuffer = ByteBuffer.wrap(data);
-        startIndex = 0;
-        length = data.length;
     }
 
     public int length() {
-        return length;
+        return dataBuffer.capacity();
     }
 
     private ByteBuffer select(int[] range) {
         int start = (range.length < 1) ? 0 : range[0];
-        int end = (range.length < 2) ? length : range[1];
-        if (0 > start || start > end || end > length) {
+        int end = (range.length < 2) ? dataBuffer.capacity() : range[1];
+        if (0 > start || start > end || end > dataBuffer.capacity()) {
             throw new IllegalArgumentException("Invalid Range for Row: [" + start + ", " + end + ")");
         }
-        dataBuffer.clear();
-        dataBuffer.position(startIndex + start);
-        dataBuffer.limit(startIndex + end);
-        return dataBuffer;
+        return dataBuffer.position(start).limit(end);
     }
 
-    // prefer getRange over this
     public byte[] getAttribute(int attS, int attL) {
-        return Arrays.copyOfRange(dataBuffer.array(), startIndex + attS, startIndex + attS + attL);
+        int start = dataBuffer.arrayOffset() + attS;
+        int end =  dataBuffer.arrayOffset() + attS + attL;
+        return Arrays.copyOfRange(dataBuffer.array(), start, end);
     }
 
-    public ByteBuffer getRange(int... range) {
-        return select(range).duplicate();
+    /**
+     * Returns a new ByteBuffer with the same backing array. Content is subject to changes.
+     */
+    public ByteBuffer viewRange(int... range) {
+        return select(range).slice();
+    }
+
+    /**
+     * Returns a new ByteBuffer with a new backing array, such that future changes to the dataBuffer backing array will not affect the new ByteBuffer.
+     */
+    public ByteBuffer copyRange(int... range) {
+        return allocateCopy(select(range));
     }
 
     public int getInt(int... range) {
