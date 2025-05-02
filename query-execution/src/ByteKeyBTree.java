@@ -182,8 +182,6 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return searchPath;
     }
 
-    
-
     private Page createPage(boolean isLeaf) {
         int bytesInRow = bytesInKey + (isLeaf ? 8 : 4);
         return bm.createPage(tableTitle, bytesInRow);
@@ -208,7 +206,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         if (comparison < 0) { // given key is less than node.getRow(rowId)
             --rowId;
         } // otherwise, given key exactly matches node.getRow(rowId), or the given key is greater than the last row in the node
-        Row match = node.getRow(rowId);
+        Row match = node.getRow(rowId).copy();
         unpinPage(pid);
         return match;
     }
@@ -272,7 +270,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
             System.out.println("<- Search Path Page IDs (leftmost is root)");
         }
         int middleRowId = target.height() / 2; // this is the number of rows currently in the page integer divided by 2
-        Row middleRow = target.getRow(middleRowId);
+        Row middleRow = target.getRow(middleRowId).copy();
         int siblingPid = createNewSibling(targetPid, depthIndex);
         //a little optimization which ISN'T implemented could be check if the key to be inserted is in the second half of the page
         //i.e. it is in the new page, if that is the case then we could add it in appropriately in the below loop.
