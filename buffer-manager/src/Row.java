@@ -47,19 +47,23 @@ public class Row {
         return dataBuffer.capacity();
     }
 
-    private ByteBuffer select(int[] range) {
+    public byte[] getAttribute(int attS, int attL) {
+        int start = dataBuffer.arrayOffset() + attS;
+        int end =  dataBuffer.arrayOffset() + attS + attL;
+        return Arrays.copyOfRange(dataBuffer.array(), start, end);
+    }
+
+    private ByteBuffer select(int... range) {
         int start = (range.length < 1) ? 0 : range[0];
         int end = (range.length < 2) ? dataBuffer.capacity() : range[1];
         if (0 > start || start > end || end > dataBuffer.capacity()) {
             throw new IllegalArgumentException("Invalid Range for Row: [" + start + ", " + end + ")");
         }
-        return dataBuffer.position(start).limit(end);
+        return dataBuffer.clear().position(start).limit(end);
     }
 
-    public byte[] getAttribute(int attS, int attL) {
-        int start = dataBuffer.arrayOffset() + attS;
-        int end =  dataBuffer.arrayOffset() + attS + attL;
-        return Arrays.copyOfRange(dataBuffer.array(), start, end);
+    public Row copy() {
+        return new Row(select(), true);
     }
 
     /**
