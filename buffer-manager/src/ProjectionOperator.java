@@ -50,6 +50,7 @@ public class ProjectionOperator implements Operator {
         child.close();
         for (int pageId : tempPageIds) {
             bufferManager.unpinPage(pageId, TEMP_FILE_NAME);
+            //should probably get rid of this markClean part, still keep them dirty I think
             bufferManager.markClean(pageId, TEMP_FILE_NAME);
         }
         tempPageIds.clear();
