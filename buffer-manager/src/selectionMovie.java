@@ -19,16 +19,17 @@ public class selectionMovie implements Operator{
 
     @Override
     public Row next() {
-        Row r = child.next();
-        if (r == null) {
-            return null;
+        while(true){
+            Row r = child.next();
+            if (r == null) {
+                return null;
+            }
+            //extracts title (hopefully) and converts to a string
+            String currTitle = new String(r.getAttribute(Constants.IMDB_MOVIE_ID_SIZE, Constants.IMDB_TITLE_SIZE), StandardCharsets.UTF_8);
+            if(currTitle.compareTo(start_range)>=0 && currTitle.compareTo(end_range)<=0){
+                return r;
+            }
         }
-        //extracts title (hopefully) and converts to a string
-        String currTitle = new String(r.getAttribute(Constants.IMDB_MOVIE_ID_SIZE, Constants.IMDB_TITLE_SIZE), StandardCharsets.UTF_8);
-        if(currTitle.compareTo(start_range)>=0 && currTitle.compareTo(end_range)<=0){
-            return r;
-        }
-        return null;
     } 
 
     @Override
