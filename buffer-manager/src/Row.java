@@ -10,9 +10,16 @@ public class Row {
     private int length;
 
     public Row(ByteBuffer buffer) {
-        dataBuffer = buffer;
-        startIndex = buffer.position();
-        length = buffer.remaining();
+        if (buffer.capacity() > 100) {
+            dataBuffer = ByteBuffer.allocate(buffer.remaining());
+            dataBuffer.put(buffer);
+            startIndex = 0;
+            length = dataBuffer.capacity();
+        } else {
+            dataBuffer = buffer;
+            startIndex = buffer.position();
+            length = buffer.remaining();
+        }
     }
 
     public Row(byte[]... columns) {
