@@ -50,6 +50,10 @@ public class Relation {
         this(tableTitle, attrRanges, bm, false);
     }
 
+    public int getPageCount() {
+        return bm.getPageCount(tableTitle);
+    }
+
     public Page createPage() {
         return bm.createPage(tableTitle, bytesInRow);
     }

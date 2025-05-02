@@ -1,56 +1,53 @@
 public class ScanOperator implements Operator {
-    private BufferManager bm;
-    private String table;
-    private int rowLen;
-    private int pageId;
-    private Page page;
-    private int rid;
 
-    public ScanOperator(BufferManager bm, String table, int rowLen) {
-        this.bm = bm;
-        this.table = table;
-        this.rowLen = rowLen;
+    private Relation relation;
+    private Rid nextRid;
+
+    public ScanOperator(Relation relation) {
+        this.relation = relation;
+        nextRid = null;
     }
 
     @Override
     public void open() {
-        pageId = 0;
-        rid = 0;
-        try {
-            page = bm.getPage(pageId, table);
-
-            System.out.println("Opened table: " + table + ", pageId: " + pageId + ", rowLen: " + rowLen);
-        } catch (IllegalArgumentException e) {
-            page = null;
-        }
+        nextRid = new Rid(0, 0);
+        System.out.println("Opened table: " + relation.tableTitle + ", pageId: 0, rowLen: " + relation.bytesInRow);
     }
 
     @Override
     public Row next() {
-        while (page != null) {
-            if (rid < page.height()) {
-                return page.getRow(rid++);
-            } else {
-                bm.unpinPage(page.getId(), table);
-                pageId++;
-                rid = 0;
-
-                try {
-                    page = bm.getPage(pageId, table);
-                } catch (IllegalArgumentException e) {
-                    page = null;
-                }
-            }
+        if (nextRid == null) {
+            return null;
         }
-        return null;
+        int pid = nextRid.getPageId();
+        if (pid >= relation.getPageCount()) {
+            throw new IllegalStateException("Unexpected error, next pid was invalid.");
+        }
+        int sid = nextRid.getSlotId();
+        Page currentPage = relation.getPage(pid);
+        int height = currentPage.height();
+        if (sid >= height) {
+            throw new IllegalStateException("Unexpected error, next sid was invalid.");
+        }
+        Row next = currentPage.getRow(sid); // Note that the row is not copied and subject to change, is this OK? otherwise call .copy() on this variable and return the result
+        relation.unpinPage(pid);
+        ++sid;
+        if (sid == height) {
+            ++pid;
+            if (pid == relation.getPageCount()) {
+                nextRid = null;
+                return next;
+            }
+            sid = 0;
+        }
+        nextRid = new Rid(pid, sid);
+        return next;
     }
 
     @Override
     public void close() {
-        if (page != null) {
-            bm.unpinPage(page.getId(), table);
-            System.out.println("Closed table: " + table + ", pageId: " + pageId);
-            page = null;
-        }
+        System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + nextRid.getPageId());
+        nextRid = null;
     }
+
 }
