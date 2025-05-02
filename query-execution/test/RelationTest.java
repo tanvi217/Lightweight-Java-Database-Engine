@@ -74,7 +74,7 @@ public class RelationTest {
 
     @Test
     public void testBTree() {
-        BTree<String> bt = new ByteKeyBTree<>(bm, WorkedOn.category);
+        BTree<String> bt = new ByteKeyBTree<>(20, bm, true); // (bm, WorkedOn.category);
         int pid = 0;
         int sid = 0;
         Rid testRid = new Rid(-30, -45); // fake Rid with invalid arguments

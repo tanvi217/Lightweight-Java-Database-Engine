@@ -81,30 +81,33 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         ++treeDepth;
     }
 
-    private Row createRow(Object key, int... data) { //.
+    /**
+     * @param key ByteBuffer which must have remaining() == bytesInKey
+     * @param data Some number of ints to add to the row
+     * @return A new row containing the given key, followed by the passed integers
+     */
+    private Row createRow(ByteBuffer key, int... data) {
         ByteBuffer dataBuffer = ByteBuffer.allocate(bytesInKey + data.length * 4);
         if (key == null) {
             dataBuffer.position(bytesInKey); // newly allocated buffer will have zeros as prefix
-        } else if (key instanceof ByteBuffer) {
-            dataBuffer.put((ByteBuffer) key);
-        } else if (key instanceof byte[]) { // TODO is it necessary
-            dataBuffer.put((byte[]) key);
         } else {
-            throw new IllegalArgumentException("Key passed to createRow must be null, ByteBuffer, or byte[].");
-        }
-        if (dataBuffer.position() != bytesInKey) {
-            throw new IllegalArgumentException("Object passed as key is not correct length.");
+            dataBuffer.put(key);
+            if (dataBuffer.position() != bytesInKey) {
+                throw new IllegalArgumentException("ByteBuffer passed as key is not correct length.");
+            }
         }
         for (int attr : data) {
             dataBuffer.putInt(attr);
         }
-        dataBuffer.clear();
+        dataBuffer.clear(); // reset position to 0
         return new Row(dataBuffer);
     }
     
-    // updates the two integer page IDs stored in the first row of a leaf node
+    /**
+     * Given a leaf page, updates the two integer page IDs stored in the first row of a leaf node
+     */
     private void setLeafSiblings(Page leaf, int leftSibPid, int rightSibPid) { //.
-        Row siblingRow = createRow(null, leftSibPid, rightSibPid);
+        Row siblingRow = createRow(null, leftSibPid, rightSibPid); // the integers are stored in ridRange
         if (leaf.height() == 0) { // if leaf is empty, function to insert into first row is different
             leaf.insertRow(siblingRow);
         } else {
@@ -117,12 +120,9 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     public static ByteBuffer toComparableBytes(Object input, int length) { //..
         if (input instanceof ByteBuffer) {
             ByteBuffer src = (ByteBuffer) input;
-            if (src.remaining() == length) {
-                return src;
-            }
-            if (src.remaining() > length) {
+            if (src.remaining() >= length) {
                 src.limit(src.position() + length);
-                return src; // remaining should now be equal to length
+                return src.duplicate(); // remaining should now be equal to length
             }
             ByteBuffer dst = ByteBuffer.allocate(length);
             dst.put(src);
