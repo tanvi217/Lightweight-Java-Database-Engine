@@ -120,8 +120,7 @@ public class join1 implements Operator {
                     return new Row(
                         leftRow.getAttribute(0, Constants.MOVIE_ID_SIZE),
                         leftRow.getAttribute(Constants.MOVIE_ID_SIZE, Constants.TITLE_SIZE),
-                        currRightRow.getAttribute(Constants.WORKEDON_MOVIEID_SIZE, Constants.WORKEDON_PERSONID_SIZE),
-                        currRightRow.getAttribute(Constants.WORKEDON_PERSONID_SIZE, Constants.WORKEDON_CATEGORY_SIZE)
+                        currRightRow.getAttribute(Constants.WORKEDON_MOVIEID_SIZE, Constants.WORKEDON_PERSONID_SIZE)
                     );
                 }
                 //now we went through all the matches so we just need to move on to the next right row
