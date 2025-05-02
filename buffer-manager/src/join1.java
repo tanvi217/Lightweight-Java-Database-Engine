@@ -99,6 +99,7 @@ public class join1 implements Operator {
                 if(done){
                     return null;
                 }
+                System.out.println("Made it past done");
                 //initializing everything
                 currRightRow = rightChild.next();
                 matchIndex = 0;
