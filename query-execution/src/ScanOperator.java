@@ -8,6 +8,10 @@ public class ScanOperator implements Operator {
         nextRid = null;
     }
 
+    public ScanOperator(BufferManager bm, String tableTitle, int rowLength) {
+        this(new Relation(tableTitle, rowLength, bm));
+    }
+
     @Override
     public void open() {
         nextRid = new Rid(0, 0);

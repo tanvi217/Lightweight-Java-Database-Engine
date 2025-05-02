@@ -50,6 +50,10 @@ public class Relation {
         this(tableTitle, attrRanges, bm, false);
     }
 
+    public Relation(String tableTitle, int rowLength, BufferManager bm) {
+        this(tableTitle, new int[][] {new int[] {0, rowLength}}, bm, true);
+    }
+
     public int getPageCount() {
         return bm.getPageCount(tableTitle);
     }
