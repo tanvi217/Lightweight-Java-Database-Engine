@@ -17,6 +17,10 @@ public class Relation {
     private static String pathToRelationsCSV = Constants.DATA_DIRECTORY + "relations.csv";
     private static Random rand = new Random(2L);
 
+    public static String randomizeTitle(String tableTitle) {
+        return tableTitle + "-" + rand.nextInt((int) 1e9);
+    }
+
     /**
      * This class is intended to simplify the process of using a buffer manager.
      * Instead of passing the table's title every time you use the buffer manager,
@@ -36,7 +40,7 @@ public class Relation {
      * @param randomTitle   If true, the given title will be given a random suffix.
      */
     public Relation(String tableTitle, int[][] attrRanges, BufferManager bufferManager, boolean randomTitle) {
-        this.tableTitle = randomTitle ? tableTitle + rand.nextInt((int) 1e5) : tableTitle;
+        this.tableTitle = randomTitle ? randomizeTitle(tableTitle) : tableTitle;
         this.attrRanges = attrRanges;
         bytesInRow = attrRanges[attrRanges.length - 1][1];
         bm = bufferManager;

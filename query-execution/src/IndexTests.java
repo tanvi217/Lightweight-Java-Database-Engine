@@ -6,7 +6,7 @@ import java.util.List;
 public class IndexTests {
 
     public static BTree<String> CreateIndex(BufferManager bm, int bytesInKey, int attS, int attL, int pinnedPageDepth, boolean debugPrinting) {
-        BTree<String> btree = new ByteKeyBTree<String>(bm, bytesInKey, debugPrinting);
+        BTree<String> btree = new ByteKeyBTree<String>(bytesInKey, bm, debugPrinting);
         int pageId = 0;
 
         while (true) {

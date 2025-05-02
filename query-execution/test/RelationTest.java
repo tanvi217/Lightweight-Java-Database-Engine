@@ -41,6 +41,7 @@ public class RelationTest {
             dataBuffer.putInt(sid);
             dataBuffer.put((byte) ('0' + i));
         }
+        dataBuffer.clear();
         return new Row(dataBuffer);
     }
 
@@ -73,8 +74,7 @@ public class RelationTest {
 
     @Test
     public void testBTree() {
-        int bytesInKey = WorkedOn.category[1];
-        BTree<String> bt = new ByteKeyBTree<>(bm, bytesInKey);
+        BTree<String> bt = new ByteKeyBTree<>(bm, WorkedOn.category);
         int pid = 0;
         int sid = 0;
         Rid testRid = new Rid(-30, -45); // fake Rid with invalid arguments
@@ -89,7 +89,8 @@ public class RelationTest {
                 sid = 0;
             }
             Row row = p.getRow(sid);
-            bt.insert(row.getString(WorkedOn.category), new Rid(pid, sid));
+            String passingKey = row.getString(WorkedOn.category);
+            bt.insert(passingKey, new Rid(pid, sid));
             ++sid;
         }
         workedOn.unpinPage(pid);
