@@ -5,15 +5,60 @@ import java.util.Deque;
 
 public class PreProcessor {
     public static void main(String[] args) throws Exception {
+        // if (args.length != 3) {
+        //     System.err.println("Usage: run_query <start_range> <end_range> <buffer_size>");
+        //     return;
+        // }
+
+        // String start = args[0];
+        // String end   = args[1];
+        // int bufSize  = Integer.parseInt(args[2]);
+
         BufferManager bm = new LRUBufferManager(250);
+        boolean debugPrinting = true; // Set to false to disable debug printing
 
         System.out.println("Loading tables...");
-        loadMovies(bm, "data//title.basics.tsv", true, false);
-        //loadMovies(bm, Constants.IMDB_TSV_FILE, true, false);
+        loadMovies(bm, Constants.IMDB_TSV_FILE, true, false);
         loadWorkedOn(bm, Constants.IMDB_WORKED_ON_TSV_FILE, true); // TODO: remove limitProcessingForDebug
         loadPeople(bm, Constants.IMDB_PEOPLE_TSV_FILE, false);
-
         System.out.println("Pre processing done.");
+
+        Operator movieScan = new ScanOperator(bm, "Movies", Constants.MOVIE_ID_SIZE + Constants.TITLE_SIZE);
+        Operator movieSel  = new selectionMovie(movieScan, "Episode #3.17", "Episode #3.20"); // todo : check if the operator works correctly
+
+        if (debugPrinting) {
+            movieSel.open();
+            System.out.println("--- Raw Movies (first 5 rows) ---");
+            Row dbgRaw;
+            int rawCount = 0;
+
+            while ((dbgRaw = movieSel.next()) != null && rawCount < 5) {
+                String combined = new String(dbgRaw.getAttribute(0, Constants.MOVIE_ID_SIZE + Constants.TITLE_SIZE), StandardCharsets.UTF_8).trim();
+                System.out.println(combined);
+                rawCount++;
+            }
+
+            movieSel.close();
+        }        
+
+        Operator workedScan = new ScanOperator(bm, "WorkedOn", Constants.WORKEDON_MOVIEID_SIZE + Constants.WORKEDON_PERSONID_SIZE + Constants.WORKEDON_CATEGORY_SIZE);
+        Operator workedSel  = new selectionMovie(workedScan, "director", "director");
+        Operator workedProj = new ProjectionOperator(workedSel, bm);
+
+        Operator join1 = new join1(movieSel, workedProj, bm);
+
+        Operator peopleScan = new ScanOperator(bm, "People", Constants.PERSON_ID_SIZE + Constants.PERSON_NAME_SIZE);
+        Operator join2 = new join1(join1, peopleScan, bm);
+
+        join2.open();
+        Row out;
+
+        while ((out = join2.next()) != null) {
+            String title = new String(out.getAttribute(0, Constants.MOVIE_ID_SIZE + Constants.TITLE_SIZE), StandardCharsets.UTF_8).trim();
+            int nameOff = Constants.MOVIE_ID_SIZE + Constants.TITLE_SIZE + Constants.WORKEDON_MOVIEID_SIZE + Constants.WORKEDON_PERSONID_SIZE + Constants.PERSON_ID_SIZE;
+            String name = new String(out.getAttribute(nameOff, Constants.PERSON_NAME_SIZE), StandardCharsets.UTF_8).trim();
+            System.out.println(title + "," + name);
+        }
     }
 
     private static byte[] pad(String s, int len) {
@@ -63,10 +108,8 @@ public class PreProcessor {
         System.out.printf("Movies: processed %d, skipped %d, pages %d%n", rows, skipped, pages);
 
         System.out.println("Last 5 Movies rows:");
+
         for (Row r : lastFive) System.out.println(r.toString());
-        for(Row r : lastFive){
-            System.out.println(r.getAttribute(skipped, rowLen));
-        }
         return rows;
     }
     

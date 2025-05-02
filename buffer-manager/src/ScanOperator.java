@@ -34,7 +34,6 @@ public class ScanOperator implements Operator {
                 bm.unpinPage(page.getId(), table);
                 pageId++;
                 rid = 0;
-                System.out.println("Fetching next page: " + pageId);
 
                 try {
                     page = bm.getPage(pageId, table);
