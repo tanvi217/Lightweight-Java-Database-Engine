@@ -46,7 +46,9 @@ public class Relation {
         bm = bufferManager;
     }
 
-    public Relation(String tableTitle, int[][] attrRanges, BufferManager bufferManager) { this(tableTitle, attrRanges, bufferManager, false); }
+    public Relation(String tableTitle, int[][] attrRanges, BufferManager bm) {
+        this(tableTitle, attrRanges, bm, false);
+    }
 
     public Page createPage() {
         return bm.createPage(tableTitle, bytesInRow);
