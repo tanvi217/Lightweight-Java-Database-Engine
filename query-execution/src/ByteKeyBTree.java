@@ -182,22 +182,16 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return searchPath;
     }
 
-    private Page getPage(int pid) { //.
-        return bm.getPage(pid, tableTitle);
-    }
+    
 
-    private void unpinPage(int pid) { //.
-        bm.unpinPage(pid, tableTitle);
-    }
-
-    private void markDirty(int pid) { //.
-        bm.markDirty(pid, tableTitle);
-    }
-
-    private Page createPage(boolean isLeaf) { //.
+    private Page createPage(boolean isLeaf) {
         int bytesInRow = bytesInKey + (isLeaf ? 8 : 4);
         return bm.createPage(tableTitle, bytesInRow);
     }
+
+    private Page getPage(int pid) { return bm.getPage(pid, tableTitle); }
+    private void unpinPage(int pid) { bm.unpinPage(pid, tableTitle); }
+    private void markDirty(int pid) { bm.markDirty(pid, tableTitle); }
 
     // the row with id 0 only begins with a meaningful key when 'node' is a leaf
     public Row firstMatchingRow(ByteBuffer key, int pid) { //.
@@ -238,7 +232,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
             System.out.println("First match found at row " + rowId + " of page " + leafPid);
         }
         while (rowId < leaf.height() && compareKeys(endKey, leaf.getRow(rowId)) >= 0) {
-            matches.add(new Rid(leaf.getRow(rowId).getRange(ridRange))); // passes ByteBuffer of Rid data directly to constructor
+            matches.add(new Rid(leaf.getRow(rowId).viewRange(ridRange))); // passes ByteBuffer of Rid data directly to constructor
             ++rowId;
         }
         if (debugPrinting) {
@@ -311,7 +305,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         }
         unpinPage(targetPid);
         unpinPage(siblingPid);
-        Row pointerRow = createRow(middleRow.getRange(keyRange), siblingPid);
+        Row pointerRow = createRow(middleRow.viewRange(keyRange), siblingPid);
 
         if (depthIndex == 0) { // splitting the root
             createNewRoot(); // updates treeDepth and sets rootPid
@@ -327,7 +321,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     }
 
     // returns page ID of new sibling
-    private int createNewSibling(int leftPid, int depthIndex) { //.
+    private int createNewSibling(int leftPid, int depthIndex) {
         boolean isLeaf = depthIndex == treeDepth - 1; 
         Page right = createPage(isLeaf);
         int rightPid = right.getId();
@@ -343,15 +337,15 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return rightPid;
     }
 
-    private int compareKeys(ByteBuffer keyA, Row keyRowB) { //.
+    private int compareKeys(ByteBuffer keyA, Row keyRowB) {
         if (keyA.remaining() != bytesInKey) {
             throw new IllegalArgumentException("ByteBuffer key must have the correct number of bytes.");
         }
-        return keyA.compareTo(keyRowB.getRange(keyRange));
+        return keyA.compareTo(keyRowB.viewRange(keyRange));
     }
 
-    private int compareKeys(Row keyRowA, Row keyRowB) { //.
-        return keyRowA.getRange(keyRange).compareTo(keyRowB.getRange(keyRange));
+    private int compareKeys(Row keyRowA, Row keyRowB) {
+        return keyRowA.viewRange(keyRange).compareTo(keyRowB.viewRange(keyRange));
     }
 
     // relies on the fact that there is space in the target node
@@ -363,11 +357,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
             }
             ++rowId;
         }
-        if (rowId == target.height()) { // reached end
-            target.insertRow(newRow);
-        } else {
-            target.insertRow(newRow, rowId); // insertRow with rowId argument shifts rows to make space
-        }
+        target.insertRow(newRow, rowId); // insertRow with rowId argument shifts rows to make space
         markDirty(target.getId());
     }
 

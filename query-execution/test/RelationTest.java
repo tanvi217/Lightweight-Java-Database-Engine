@@ -109,7 +109,7 @@ public class RelationTest {
             Page target = workedOn.getPage(pageId);
             Row row = target.getRow(rid.getSlotId());
             String category = row.getString(WorkedOn.category);
-            ByteBuffer nineBytes = row.getRange(WorkedOn.movieId);
+            ByteBuffer nineBytes = row.viewRange(WorkedOn.movieId);
             assertEquals("Test row should contain page id", pageId, nineBytes.getInt());
             assertEquals("Test row should contain slot id", rid.getSlotId(), nineBytes.getInt());
             System.out.println(category); // printing all random strings that were alphabetically between "g" and "gg"
