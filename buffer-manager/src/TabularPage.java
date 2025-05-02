@@ -32,12 +32,14 @@ public class TabularPage implements Page {
     public TabularPage(int pageId, int bytesInRow, ByteBuffer pageData) {
         this.pageId = pageId;
         buffer = pageData.slice();
-        int availableSpace = buffer.capacity - metadataBytes;
+        int availableSpace = buffer.capacity() - metadataBytes; // capacity is equal to the size of the ByteBuffer slice
         rowLengthLocation = availableSpace; // the index directly after space which may be used for rows
         nextRowIdLocation = rowLengthLocation + 4; // the next four bytes (one int) over
         if (bytesInRow > 0) { // any positive rowLength is valid, and assume that this is a new page with no rows yet
             rowLength = bytesInRow;
+            buffer.putInt(rowLengthLocation, rowLength);
             nextRowId = 0;
+            buffer.putInt(nextRowIdLocation, nextRowId);
         } else { // otherwise read values from the byte buffer instead
             rowLength = buffer.getInt(rowLengthLocation);
             nextRowId = buffer.getInt(nextRowIdLocation);

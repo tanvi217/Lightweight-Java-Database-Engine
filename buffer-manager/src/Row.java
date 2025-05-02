@@ -22,7 +22,7 @@ public class Row {
      * The constructor with only a ByteBuffer passed defaults to not copying the backing content.
      */
     public Row(ByteBuffer data) {
-        dataBuffer = data.slice();
+        this(data, false);
     }
 
     public Row(byte[]... columns) {
