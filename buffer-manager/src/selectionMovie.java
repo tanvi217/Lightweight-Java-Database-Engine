@@ -26,6 +26,12 @@ public class selectionMovie implements Operator{
             }
             //extracts title (hopefully) and converts to a string
             String currTitle = new String(r.getAttribute(Constants.IMDB_MOVIE_ID_SIZE, Constants.IMDB_TITLE_SIZE), StandardCharsets.UTF_8);
+            /*System.out.println(r.toString());
+            System.out.println(currTitle);
+            System.out.println(start_range);
+            System.out.println(end_range);
+            System.out.println(currTitle.compareTo(start_range)>=0);
+            System.out.println(currTitle.compareTo(end_range));*/
             if(currTitle.compareTo(start_range)>=0 && currTitle.compareTo(end_range)<=0){
                 return r;
             }
