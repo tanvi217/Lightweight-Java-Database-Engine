@@ -8,7 +8,7 @@ public class TabularPage implements Page {
     private ByteBuffer buffer;
     private int maxRows;
     private int pageStart; // index of first byte of this page in buffer
-    public int nextRowIdLocation;
+    private int nextRowIdLocation;
     private int rowLengthLocation;
     private Row[] rows;
     private int nextRowId; // equal to the number of full rows in this page
@@ -110,7 +110,7 @@ public class TabularPage implements Page {
         buffer.clear();
         buffer.putInt(nextRowIdLocation, nextRowId); // write new nextRowId to buffer
         while (dstRowId > rowId) {
-            overwriteRow(selectRow(dstRowId - 1), dstRowId);
+            overwriteRow(new Row(selectRow(dstRowId - 1).getRange()), dstRowId); // fix so that we don't have to wrap row like this
             --dstRowId;
         }
         overwriteRow(row, dstRowId); // i == rowId

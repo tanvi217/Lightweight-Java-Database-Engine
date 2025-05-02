@@ -92,8 +92,6 @@ public class IMDbPageTest {
     public void testNextRowIdConsistency() {
         //this has to do with how we are storing data in the buffer. We are using the last byte to store the nextRowId to make for
         //efficient reading of pages from disk, this helps us loop over the proper number of rows when we pull out the data from disk.
-        System.out.println("A - " + page.nextRowIdLocation);
-        System.out.println("B - " + (pageBytes - 4));
         assertEquals("Initial nextRowId should be 0", 0, buffer.getInt(pageBytes - 4));
         page.insertRow(mockRow1);
         buffer.clear(); // temp fix, I should make it so that insertRow preserves the state of buffer position/limit

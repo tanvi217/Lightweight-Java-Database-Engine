@@ -10,33 +10,38 @@ import java.util.List;
 
 class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
 
-    private static int numInstances = 0; // used for creating a unique fileTitle for each new BTree
-    private BufferManager bm;
-    
-    private int rootPid; // page id of root
-    private int treeDepth; // number of layers in tree. So single leaf node as root has treeDepth 1
-    private int bytesInKey; // number of bytes in search key
-    private String fileTitle;
-    private boolean debugPrinting;
+    private static String tableTitlePrefix = "BTreeNodes";
+    private String tableTitle;
     private int[] keyRange;
-    private int[] ridRange;
     private int[] firstInt;
     private int[] secondInt;
+    private int rootPid; // page id of root
+    private int treeDepth = 0; // number of layers in tree. So single leaf node as root has treeDepth 1
+    private int bytesInKey; // number of bytes in search key
+    private BufferManager bm;
+    private boolean debugPrinting;
+    private int[] ridRange;
+    
 
-    public ByteKeyBTree(BufferManager bm, int bytesInKey, boolean debugPrinting) { //.
+    public ByteKeyBTree(int bytesInKey, BufferManager bm, boolean debugPrinting) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
+        this.debugPrinting = debugPrinting;
         keyRange = new int[] {0, bytesInKey};
         ridRange = new int[] {bytesInKey, bytesInKey + 8};
         firstInt = new int[] {bytesInKey, bytesInKey + 4};
         secondInt = new int[] {bytesInKey + 4, bytesInKey + 8};
-        this.debugPrinting = debugPrinting;
-        treeDepth = 0;
-        fileTitle = "bm-B-plus-tree-" + (++numInstances);
+        tableTitle = Relation.randomizeTitle(tableTitlePrefix);
         createNewRoot(); // sets treeDepth to 1 and rootPid to correct page ID
     }
 
-    public ByteKeyBTree(BufferManager bm, int bytesInKey) { this(bm, bytesInKey, false); }
+    public ByteKeyBTree(BufferManager bm, int[] stringRange) { // for use with string keys, where the stringRange is something like Movies.title and the length of the range with be bytesInKey
+        this(stringRange[1] - stringRange[0], bm, false);
+    }
+
+    public ByteKeyBTree(BufferManager bm, int keyMaxAbsValue) { // for use with integer keys. If keys could range from -6 to 4, or from 3 to 6, then keyMaxAbsValue is 6
+        this(Integer.toString(keyMaxAbsValue * 2, 36).length(), bm, false);
+    }
 
     @Override
     public Iterator<Rid> search(K callerKey) { //.
@@ -61,18 +66,17 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
 
     @Override
     public String toString() { //.
-        return fileTitle + " depth is " + treeDepth; 
+        return tableTitle + " depth is " + treeDepth; 
     }
 
     // sets the rootPid and treeDepth instance variables
     private void createNewRoot() { //.
-        boolean isLeaf = treeDepth == 0; // very first root, new node will be leaf
-        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
-        Page root = createPage(bytesInRow);
-        rootPid = root.getId();
+        boolean isLeaf = treeDepth == 0;
+        Page root = createPage(isLeaf);
         if (isLeaf) {
             setLeafSiblings(root, -1, -1);
         }
+        rootPid = root.getId();
         unpinPage(rootPid);
         ++treeDepth;
     }
@@ -80,17 +84,21 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     private Row createRow(Object key, int... data) { //.
         ByteBuffer dataBuffer = ByteBuffer.allocate(bytesInKey + data.length * 4);
         if (key == null) {
-            dataBuffer.position(bytesInKey);
+            dataBuffer.position(bytesInKey); // newly allocated buffer will have zeros as prefix
         } else if (key instanceof ByteBuffer) {
             dataBuffer.put((ByteBuffer) key);
-        } else if (key instanceof byte[]) {
+        } else if (key instanceof byte[]) { // TODO is it necessary
             dataBuffer.put((byte[]) key);
         } else {
             throw new IllegalArgumentException("Key passed to createRow must be null, ByteBuffer, or byte[].");
         }
+        if (dataBuffer.position() != bytesInKey) {
+            throw new IllegalArgumentException("Object passed as key is not correct length.");
+        }
         for (int attr : data) {
             dataBuffer.putInt(attr);
         }
+        dataBuffer.clear();
         return new Row(dataBuffer);
     }
     
@@ -175,19 +183,20 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     }
 
     private Page getPage(int pid) { //.
-        return bm.getPage(pid, fileTitle);
+        return bm.getPage(pid, tableTitle);
     }
 
     private void unpinPage(int pid) { //.
-        bm.unpinPage(pid, fileTitle);
+        bm.unpinPage(pid, tableTitle);
     }
 
     private void markDirty(int pid) { //.
-        bm.markDirty(pid, fileTitle);
+        bm.markDirty(pid, tableTitle);
     }
 
-    private Page createPage(int bytesInRow) { //.
-        return bm.createPage(fileTitle, bytesInRow);
+    private Page createPage(boolean isLeaf) { //.
+        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4);
+        return bm.createPage(tableTitle, bytesInRow);
     }
 
     // the row with id 0 only begins with a meaningful key when 'node' is a leaf
@@ -320,8 +329,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     // returns page ID of new sibling
     private int createNewSibling(int leftPid, int depthIndex) { //.
         boolean isLeaf = depthIndex == treeDepth - 1; 
-        int bytesInRow = bytesInKey + (isLeaf ? 8 : 4); // leaf nodes have two ints
-        Page right = createPage(bytesInRow);
+        Page right = createPage(isLeaf);
         int rightPid = right.getId();
         if (isLeaf) {
             Page left = getPage(leftPid);
