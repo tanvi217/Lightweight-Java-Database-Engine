@@ -95,6 +95,7 @@ public class ProjectionOperator implements Operator {
             tempTableScan.close();
             if (deleteOnClose) {
                 // need to delete temporary table? Right now, we don't delete, materialized stays true and tempTableScan can be reused
+                // if we delete, then the temporary table has to be created in every loop of the join???
                 projected.delete();
                 materialized = false;
             }

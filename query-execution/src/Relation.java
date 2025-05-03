@@ -51,8 +51,12 @@ public class Relation {
         this(tableTitle, attrRanges, bm, false);
     }
 
+    public Relation(String tableTitle, int rowLength, BufferManager bm, boolean randomTitle) {
+        this(tableTitle, new int[][] {new int[] {0, rowLength}}, bm, randomTitle);
+    }
+
     public Relation(String tableTitle, int rowLength, BufferManager bm) {
-        this(tableTitle, new int[][] {new int[] {0, rowLength}}, bm, true);
+        this(tableTitle, rowLength, bm, false);
     }
 
     public int getPageCount() {
@@ -79,7 +83,11 @@ public class Relation {
         bm.markClean(pid, tableTitle);
     }
 
-    public void insertRow(Row nextRow) {
+    /**
+     * Inserts row, and returns the pageId of the page that will be inserted into on the next call of insertRow(), assuming that the pages are otherwise unchanged.
+     * This means we can check if insertRow() filled the last slot in a page, as the pageId returned will be different from the pageId inserted into.
+     */
+    public int insertRow(Row nextRow) {
         int lastPid = getPageCount() - 1;
         Page target;
         if (lastPid < 0) {
@@ -96,8 +104,14 @@ public class Relation {
             }
         }
         target.insertRow(nextRow);
-        markDirty(lastPid);
+        boolean filled = target.isFull();
+        markDirty(lastPid); // lastPid is same as targetPid at this point
         unpinPage(lastPid);
+        return filled ? lastPid + 1 : lastPid;
+    }
+
+    public int rowLength() {
+        return bytesInRow;
     }
 
     public void delete() {
