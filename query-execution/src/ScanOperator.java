@@ -1,7 +1,7 @@
 public class ScanOperator implements Operator {
 
     private Relation relation;
-    private Rid nextRid;
+    public Rid nextRid;
 
     public ScanOperator(Relation relation) {
         this.relation = relation;

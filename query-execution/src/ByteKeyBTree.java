@@ -49,6 +49,16 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return internalRangeSearch(key, key);
     }
 
+    /**
+     * Guarantees that last two elements of the result iterator have different keys.
+     * This allows a next block search to use the key of the last element.
+     */
+    @Override
+    public Iterator<Rid> groupSearch(K callerKey, int groupSize) {
+        ByteBuffer key = toComparableBytes(callerKey, bytesInKey);
+        return internalRangeSearch(key, key, groupSize);
+    }
+
     @Override
     public Iterator<Rid> rangeSearch(K callerStartKey, K callerEndKey) { //.
         ByteBuffer startKey = toComparableBytes(callerStartKey, bytesInKey);
@@ -162,9 +172,13 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     }
 
     // finds the search path to the node containing the start key, and finds matches starting there
-    private Iterator<Rid> internalRangeSearch(ByteBuffer startKey, ByteBuffer endKey) { //..
+    private Iterator<Rid> internalRangeSearch(ByteBuffer startKey, ByteBuffer endKey, int groupSize) { //..
         int leafPid = getSearchPath(startKey)[treeDepth - 1]; // leaf node is last in search path
-        return getLeafMatches(leafPid, startKey, endKey).iterator();
+        return getLeafMatches(leafPid, startKey, endKey, groupSize).iterator();
+    }
+
+    private Iterator<Rid> internalRangeSearch(ByteBuffer startKey, ByteBuffer endKey) {
+        return internalRangeSearch(startKey, endKey, 0);
     }
 
     // starts at root, and follows pointers in the tree to the leaf page containing the first occurence of the key
@@ -211,7 +225,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         return match;
     }
 
-    private List<Rid> getLeafMatches(int leafPid, ByteBuffer startKey, ByteBuffer endKey) { //.
+    private List<Rid> getLeafMatches(int leafPid, ByteBuffer startKey, ByteBuffer endKey, int groupSize) { //.
         List<Rid> matches = new ArrayList<>();
         Page leaf;
 
@@ -229,7 +243,14 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         if (debugPrinting) {
             System.out.println("First match found at row " + rowId + " of page " + leafPid);
         }
-        while (rowId < leaf.height() && compareKeys(endKey, leaf.getRow(rowId)) >= 0) {
+        while (rowId < leaf.height()) {
+            if (groupSize == 0 && compareKeys(endKey, leaf.getRow(rowId)) < 0) {
+                break; // if not doing group search then conditions below don't matter
+            }
+            if (compareKeys(endKey, leaf.getRow(rowId)) < 0 && matches.size() >= groupSize && rowId > 1 && compareKeys(leaf.getRow(rowId), leaf.getRow(rowId - 1)) != 0) {
+                // if current row is no longer in range AND group size has been met AND this is not the first row AND last two matches contain different keys, stop adding
+                break;
+            }
             matches.add(new Rid(leaf.getRow(rowId).viewRange(ridRange))); // passes ByteBuffer of Rid data directly to constructor
             ++rowId;
         }
@@ -242,7 +263,12 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         int nextLeafPid = (rowId == leaf.height()) ? leaf.getRow(0).getInt(secondInt) : -2; // if value from row is -1 then we have reached the end of leaf pages. -2 if we did finish searching and don't need a next page ID
         unpinPage(leafPid);
         if (nextLeafPid >= 0) {
-            matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey));
+            if (groupSize == 0) {
+                matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey, 0));
+            } else {
+                int nextGroupSize = Math.max(1, groupSize - matches.size());
+                matches.addAll(getLeafMatches(nextLeafPid, startKey, endKey, nextGroupSize));
+            }
         }
         return matches;
     }

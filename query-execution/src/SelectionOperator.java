@@ -39,4 +39,5 @@ public class SelectionOperator implements Operator {
     public void close() {
         child.close();
     }
+
 }

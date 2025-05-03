@@ -20,7 +20,6 @@ public class ProjectionOperator implements Operator {
         }
         return length;
     }
-    
 
     public ProjectionOperator(Operator child, int[]... srcRanges) {
         this.child = child;
