@@ -17,6 +17,8 @@ public interface BTree<K extends Comparable<K>> {
      */
     Iterator<Rid> search(K key);
 
+    Iterator<Rid> groupSearch(K key, int groupSize);
+
     /**
      * Performs a range query, retrieving all key-value pairs in the specified range.
      *

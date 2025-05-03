@@ -11,7 +11,7 @@
 
     <property name="junit.jar" value="${labs.lib}/junit-4.13.2.jar"/>
     <property name="hamcrest.jar" value="${labs.lib}/hamcrest-core-1.3.jar"/>
-    <property name="main-method-class" value="CreateIndex"/>
+    <property name="main-method-class" value="LoadIMDb"/>
 
     <target name="init">
         <mkdir dir="${labs.qe.build}"/>
@@ -27,6 +27,14 @@
 
     <target name="run" depends="compile">
         <java classname="${main-method-class}" classpath="${labs.qe.build}"/>
+    </target>
+
+    <target name="load-imdb" depends="compile">
+        <java classname="LoadIMDb" classpath="${labs.qe.build}"/>
+    </target>
+
+    <target name="query-imdb" depends="compile">
+        <java classname="RunIMDbQuery" classpath="${labs.qe.build}"/>
     </target>
 
     <target name="compile-test" depends="init">

@@ -133,7 +133,7 @@ public class LRUBufferManager extends BufferManager {
     // one to one mapping between pageKeys and (pageId, fileId) pairs
     private int getPageKey(int pageId, String filename) {
         if (!fileIds.containsKey(filename)) {
-            throw new IllegalArgumentException("File with this name has not been seen before.");
+            throw new IllegalArgumentException("File with name " + filename + " has not been seen before.");
         }
         int fileId = fileIds.get(filename);
         return (2 * pageId + 1) * (1 << fileId) - 1;
@@ -360,6 +360,7 @@ public class LRUBufferManager extends BufferManager {
     @Override
     void setPageCount(int pageCount, String fileTitle) {
         numPagesInFile.put(fileTitle, pageCount);
+        fileIds.put(fileTitle, fileIds.size());
     }
 
 }
