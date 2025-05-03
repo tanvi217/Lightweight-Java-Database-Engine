@@ -57,7 +57,10 @@ public class join1 implements Operator {
             bufferManager.markClean(tempPgIds[i], Constants.JOIN1_TEMP_FILE_NAME);
             if(i ==0){
                 //inserting the first row because we are checking before loop to see if we need to return a null.
-                currPage.insertRow(currRow);
+                int slotId = currPage.insertRow(currRow);
+                String joinKey = new String(currRow.getAttribute(Constants.MOVIE_ID_SIZE+Constants.TITLE_SIZE, Constants.WORKEDON_PERSONID_SIZE));
+                hashTable.computeIfAbsent(joinKey, k -> new ArrayList<>())
+                    .add(new Rid(currPage.getId(), slotId));
             }
             //don't mark dirty because we don't want to persist to disk
             while(!currPage.isFull()){
@@ -99,6 +102,7 @@ public class join1 implements Operator {
                 if(done){
                     return null;
                 }
+                //System.out.println("Made it past done");
                 //initializing everything
                 currRightRow = rightChild.next();
                 matchIndex = 0;

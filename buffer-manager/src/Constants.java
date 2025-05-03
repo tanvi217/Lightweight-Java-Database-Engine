@@ -12,7 +12,7 @@ public class Constants {
     public static final int IMDB_TITLE_SIZE = 30; // title size: 30
     public static final int WORKEDON_MOVIEID_SIZE = 9; // movieId size: 9
     public static final int WORKEDON_PERSONID_SIZE = 10; // personId size: 10
-    public static final int WORKEDON_CATEGORY_SIZE = 10; // category size: 10
+    public static final int WORKEDON_CATEGORY_SIZE = 20; // category size: 20
     public static final int PERSON_ID_SIZE = 10; // personId size: 10
     public static final int PERSON_NAME_SIZE = 105; // personName size: 105
     //changing some stuff temporarily, here is the original
@@ -30,4 +30,6 @@ public class Constants {
     public static final String TEMP_FILE_NAME = "__temp__"; //temp file produced from projection
     public static final int PROJECTED_ROW_LENGTH = 19; // size of rows from temp file ^, movieId(9) + personId(10)
     public static final String JOIN1_TEMP_FILE_NAME = "__join1temp__";
+    public static final String JOIN2_TEMP_FILE_NAME = "__join2temp__";
+    public static final int JOIN1_OUTPUT_ROW_LENGTH = 49; //9 for movie id, 30 for movie title, 10 for person id
 }
