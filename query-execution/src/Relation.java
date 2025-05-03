@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -76,6 +77,37 @@ public class Relation {
 
     public void markClean(int pid) {
         bm.markClean(pid, tableTitle);
+    }
+
+    public void insertRow(Row nextRow) {
+        int lastPid = getPageCount() - 1;
+        Page target;
+        if (lastPid < 0) {
+            target = createPage();
+            lastPid = target.getId();
+        } else {
+            Page last = getPage(lastPid);
+            if (last.isFull()) {
+                unpinPage(lastPid);
+                target = createPage();
+                lastPid = target.getId();
+            } else {
+                target = last;
+            }
+        }
+        target.insertRow(nextRow);
+        markDirty(lastPid);
+        unpinPage(lastPid);
+    }
+
+    public void delete() {
+        bm.setPageCount(0, tableTitle);
+        File binFile = new File(Constants.DATA_DIRECTORY + tableTitle + ".bin");
+        if (binFile.delete()) {
+            System.out.println(tableTitle + " deleted successfully.");
+        } else {
+            System.out.println(tableTitle + " was not deleted.");
+        }
     }
 
     /**

@@ -1,10 +1,19 @@
-import java.nio.charset.StandardCharsets;
-
 public class SelectionOperator implements Operator {
-    private Operator child;
 
-    public SelectionOperator(Operator child) {
+    private Operator child;
+    private int[] attr;
+    private String low;
+    private String high;
+
+    public SelectionOperator(Operator child, int[] attr, String low, String high) {
         this.child = child;
+        this.attr = attr;
+        this.low = low;
+        this.high = high;
+    }
+
+    public SelectionOperator(Operator child, int[] attr, String exact) {
+        this(child, attr, exact, exact);
     }
 
     @Override
@@ -19,10 +28,8 @@ public class SelectionOperator implements Operator {
             if (row == null) {
                 return null;
             }
-            // category is at offset (9 + 10) = 19, length = 20
-            byte[] categoryBytes = row.getAttribute(19, 20);
-            String category = new String(categoryBytes, StandardCharsets.UTF_8).trim();
-            if (category.equals("director")) {
+            String inChild = row.getString(attr);
+            if (low.compareTo(inChild) <= 0 && inChild.compareTo(high) <= 0) {
                 return row;
             }
         }

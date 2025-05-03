@@ -2,12 +2,15 @@ import java.nio.ByteBuffer;
 
 public class ProjectionOperator implements Operator {
 
+    private static boolean deleteOnClose = false;
+
     private Operator child;
     private int[][] srcRanges;
     private BufferManager bm;
     private boolean onTheFly;
     private boolean materialized;
     private Operator tempTableScan;
+    private Relation projected;
     private int rowLength;
 
     private static int getRowLength(int[][] ranges) {
@@ -26,6 +29,7 @@ public class ProjectionOperator implements Operator {
         onTheFly = true;
         materialized = false;
         tempTableScan = null;
+        projected = null;
         rowLength = getRowLength(srcRanges);
     }
 
@@ -36,6 +40,7 @@ public class ProjectionOperator implements Operator {
         onTheFly = false;
         materialized = false;
         tempTableScan = null;
+        projected = null;
         rowLength = getRowLength(srcRanges);
     }
 
@@ -72,7 +77,7 @@ public class ProjectionOperator implements Operator {
             attrRanges[i][0] = (i > 0) ? attrRanges[i - 1][1] : 0; // if this is the first range the start index is 0, otherwise it is the end index of the previous range
             attrRanges[i][1] = attrRanges[i][0] + srcRanges[i][1] - srcRanges[i][0]; // start of current range plus length of src range
         }
-        Relation projected = new Relation("Projection", attrRanges, bm, true);
+        projected = new Relation("Projection", attrRanges, bm, true);
         Row nextRow = nextFromChild();
         while (nextRow != null) {
             projected.insertRow(nextRow);
@@ -88,8 +93,12 @@ public class ProjectionOperator implements Operator {
     public void close() {
         child.close();
         if (materialized) {
-            // need to delete temporary table? Right now, we don't delete, materialized stays true and tempTableScan can be reused
             tempTableScan.close();
+            if (deleteOnClose) {
+                // need to delete temporary table? Right now, we don't delete, materialized stays true and tempTableScan can be reused
+                projected.delete();
+                materialized = false;
+            }
         }
     }
 
