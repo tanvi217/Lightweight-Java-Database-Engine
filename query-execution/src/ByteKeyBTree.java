@@ -7,10 +7,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import static java.util.Map.entry;    
 
 class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
 
     private static String tableTitlePrefix = "BTreeNodes";
+    private static Map<Character, Character> asciiReplacements = Map.ofEntries(entry('à', 'a'), entry('á', 'a'), entry('â', 'a'), entry('ä', 'a'), entry('ǎ', 'a'), entry('æ', 'a'), entry('ã', 'a'), entry('å', 'a'), entry('ā', 'a'), entry('ç', 'c'), entry('ć', 'c'), entry('č', 'c'), entry('ċ', 'c'), entry('ď', 'd'), entry('ð', 'd'), entry('è', 'e'), entry('é', 'e'), entry('ê', 'e'), entry('ë', 'e'), entry('ě', 'e'), entry('ẽ', 'e'), entry('ē', 'e'), entry('ė', 'e'), entry('ę', 'e'), entry('ğ', 'g'), entry('ġ', 'g'), entry('ħ', 'h'), entry('ì', 'i'), entry('í', 'i'), entry('î', 'i'), entry('ï', 'i'), entry('ǐ', 'i'), entry('ĩ', 'i'), entry('ī', 'i'), entry('ı', 'i'), entry('į', 'i'), entry('ķ', 'k'), entry('ł', 'l'), entry('ļ', 'l'), entry('ľ', 'l'), entry('ñ', 'n'), entry('ń', 'n'), entry('ņ', 'n'), entry('ň', 'n'), entry('ò', 'o'), entry('ó', 'o'), entry('ô', 'o'), entry('ö', 'o'), entry('ǒ', 'o'), entry('œ', 'o'), entry('ø', 'o'), entry('õ', 'o'), entry('ō', 'o'), entry('ř', 'r'), entry('ß', 's'), entry('ş', 's'), entry('ș', 's'), entry('ś', 's'), entry('š', 's'), entry('ț', 't'), entry('ť', 't'), entry('þ', 't'), entry('ù', 'u'), entry('ú', 'u'), entry('û', 'u'), entry('ü', 'u'), entry('ǔ', 'u'), entry('ũ', 'u'), entry('ū', 'u'), entry('ű', 'u'), entry('ů', 'u'), entry('ŵ', 'w'), entry('ý', 'y'), entry('ŷ', 'y'), entry('ÿ', 'y'), entry('ź', 'z'), entry('ž', 'z'), entry('ż', 'z'));
     private String tableTitle;
     private int[] keyRange;
     private int[] firstInt;
@@ -144,9 +148,14 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
             if (str.length() > length) {
                 str = str.substring(0, length);
             }
-            byte[] bytes = str.toLowerCase().getBytes(StandardCharsets.UTF_8);
+            str = str.toLowerCase();
+            byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
             if (bytes.length != str.length()) {
-                throw new IllegalArgumentException("ByteKeyBTree doesn't support multi-byte character encodings.");
+                str = toASCII(str);
+                bytes = str.getBytes(StandardCharsets.UTF_8);
+                if (bytes.length != str.length()) {
+                    throw new IllegalArgumentException("ByteKeyBTree doesn't support multi-byte character encodings: " + str);
+                }
             }
             return ByteBuffer.wrap(Arrays.copyOf(bytes, length));
         }
@@ -169,6 +178,14 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
             return ByteBuffer.wrap(bytes);
         }
         throw new IllegalArgumentException("Only String, integer, or ByteBuffer keys are supported in ByteKeyBTree");
+    }
+
+    private static String toASCII(String input) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            sb.append(asciiReplacements.getOrDefault(c, c));
+        }
+        return sb.toString();
     }
 
     // finds the search path to the node containing the start key, and finds matches starting there

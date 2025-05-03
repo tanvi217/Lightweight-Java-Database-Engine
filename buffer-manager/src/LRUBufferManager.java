@@ -343,9 +343,7 @@ public class LRUBufferManager extends BufferManager {
             if (isDirty[i]) {
                 int pageId = bufferPages[i].getId();
                 int pageKey = getPageKey(pageId, fileToWrite[i]);
-                try {
-                    writePageToDisk(pageId, pageKey);
-                } catch (Exception e) {}
+                writePageToDisk(pageId, pageKey);
             }
             isDirty[i] = false;
             pinCount[i] = 0;

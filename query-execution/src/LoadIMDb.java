@@ -3,6 +3,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class LoadIMDb {
 
@@ -40,15 +41,19 @@ public class LoadIMDb {
                     byte[] attrBytes = values[attrIndices[i]].getBytes(StandardCharsets.UTF_8);
                     int[] range = relation.attrRanges[i];
                     if (attrBytes.length > range[1] - range[0]) {
-                        skip = true;
-                        System.out.println("Skipped due to attr: " + values[attrIndices[i]]);
-                        break; // out of inner loop only
+                        attrBytes = Arrays.copyOf(attrBytes, range[1] - range[0]);
+                        if (range[1] == 9 && relation.tableTitle.contains("Movies")) {
+                            skip = true; // only skipping long movieIds
+                            System.out.println("Skipped due to attr: " + values[attrIndices[i]]);
+                            break; // out of inner loop only
+                        }
                     }
+                    rowData.position(range[0]);
                     rowData.put(attrBytes);
-                    rowData.position(range[1]);
                 }
                 if (!skip) {
-                    relation.insertRow(new Row(rowData));
+                    Row toInsert = new Row(rowData.clear());
+                    relation.insertRow(toInsert);
                     ++numInserted;
                 }
             }
