@@ -83,7 +83,7 @@ public class ProjectionOperator implements Operator {
             nextRow = nextFromChild();
         }
         materialized = true;
-        tempTableScan = new ScanOperator(projected);
+        tempTableScan = new ScanOperator(projected, true); // if materialized, then one page is pinned
         tempTableScan.open();
         return tempTableScan.next();
     }

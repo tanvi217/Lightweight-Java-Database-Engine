@@ -10,6 +10,7 @@ public class IndexOperator implements Operator {
     private BTree<String> bTree;
     private Iterator<Rid> nextRids;
 
+    // will retrieve rows from the given relation in sorted order of passed string attribute, starting at startKey
     public IndexOperator(Relation relation, int[] attr, String startKey, BufferManager bm) {
         this.relation = relation;
         this.attr = attr;
@@ -22,23 +23,25 @@ public class IndexOperator implements Operator {
     @Override
     public void open() {
         bTree = new ByteKeyBTree<>(bm, attr);
-        ScanOperator scan = new ScanOperator(relation);
+        ScanOperator scan = new ScanOperator(relation, false);
         scan.open();
-        int nextPid = scan.nextRid.getPageId();
-        int nextSid = scan.nextRid.getSlotId();
+        Rid nextRid = scan.getNextRid();
+        int nextPid = nextRid.getPageId();
+        int nextSid = nextRid.getSlotId();
         Row nextRow = scan.next(); // nextPid and nextRid should lead to this row
         while (nextRow != null) {
             String attrString = nextRow.getString(attr);
             bTree.insert(attrString, new Rid(nextPid, nextSid));
-            nextPid = scan.nextRid.getPageId();
-            nextSid = scan.nextRid.getSlotId();
+            nextRid = scan.getNextRid();
+            nextPid = nextRid.getPageId();
+            nextSid = nextRid.getSlotId();
             nextRow = scan.next();
         }
         scan.close();
         nextRids = bTree.groupSearch(startKey, groupSize);
     }
 
-    public void reOpen(String newStartKey) {
+    public void reopen(String newStartKey) {
         nextRids = bTree.groupSearch(newStartKey, groupSize);
     }
 
@@ -72,7 +75,7 @@ public class IndexOperator implements Operator {
     @Override
     public void close() {
         nextRids = null;
-        // delete bTree somehow? not good if using reOpen()
+        // delete bTree somehow? not good if using reopen()
     }
 
 }
