@@ -67,7 +67,8 @@ public class ScanOperator implements Operator {
 
     @Override
     public void close() {
-        System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + nextRid.getPageId());
+        int debugPageId = nextRid == null ? -1 : nextRid.getPageId();
+        System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + debugPageId);
         nextRid = null;
         if (keepPinned) {
             relation.unpinPage(pinned.getId());

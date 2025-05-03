@@ -33,6 +33,9 @@ public class IndexOperator implements Operator {
             String attrString = nextRow.getString(attr);
             bTree.insert(attrString, new Rid(nextPid, nextSid));
             nextRid = scan.getNextRid();
+            if (nextRid == null) {
+                break; // code could be reformatted
+            }
             nextPid = nextRid.getPageId();
             nextSid = nextRid.getSlotId();
             nextRow = scan.next();
