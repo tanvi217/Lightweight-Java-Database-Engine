@@ -101,12 +101,15 @@ public class BNLJoinOperator implements Operator {
 
     private void unloadBlock() { // make sure that all blockPids before a negative entry are actually pinned
         sortedRows = null;
+        if (!blockPinned) {
+            return;
+        }
         for (int i = 0; i < blockPids.length; ++i) {
-            System.out.println("unloading... " + blockPids[i]);
             if (blockPids[i] < 0) {
                 return;
             }
             outRelation.unpinPage(blockPids[i]);
+            blockPids[i] = -1;
         }
         blockPinned = false;
     }
@@ -123,15 +126,16 @@ public class BNLJoinOperator implements Operator {
 
     @Override
     public Row next() {
+        if (nextBlockPid == -1) {
+            return null;
+        }
         if (joinedRows != null && joinedRows.hasNext()) {
             return joinedRows.next();
         }
         Row innerRow = inChild.next();
         if (innerRow == null) { // inner EOF
             inChild.close();
-            if (blockPinned) {
-                unloadBlock();
-            }
+            unloadBlock();
             boolean success = loadNewBlock();
             if (!success) { // outer and inner EOF
                 return null;
@@ -169,9 +173,7 @@ public class BNLJoinOperator implements Operator {
         nextBlockPid = 0;
         sortedRows = null;
         joinedRows = null;
-        if (blockPinned) {
-            unloadBlock();
-        }
+        unloadBlock();
         for (int i = 0; i < blockPids.length; ++i) {
             blockPids[i] = -1;
         }

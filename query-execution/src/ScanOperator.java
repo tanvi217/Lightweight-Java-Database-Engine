@@ -22,7 +22,7 @@ public class ScanOperator implements Operator {
         if (keepPinned) {
             pinned = relation.getPage(0);
         }
-        System.out.println("Opened table: " + relation.tableTitle + ", pageId: 0, rowLen: " + relation.bytesInRow);
+        // System.out.println("Opened table: " + relation.tableTitle + ", pageId: 0, rowLen: " + relation.bytesInRow);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class ScanOperator implements Operator {
     @Override
     public void close() {
         int debugPageId = nextRid == null ? -1 : nextRid.getPageId();
-        System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + debugPageId);
+        // System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + debugPageId);
         nextRid = null;
         if (keepPinned && pinned != null) {
             relation.unpinPage(pinned.getId());
