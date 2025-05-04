@@ -53,7 +53,7 @@ public class LoadIMDb {
                 }
                 if (!skip) {
                     Row toInsert = new Row(rowData.clear());
-                    relation.insertRow(toInsert);
+                    relation.insertRow(toInsert, false);
                     ++numInserted;
                 }
             }

@@ -14,6 +14,7 @@ public class BNLJoinOperator implements Operator {
     private BufferManager bm;
     private int[] blockPids;
     private int nextBlockPid;
+    private boolean blockPinned;
     private Relation outRelation;
     private Map<String, List<Row>> sortedRows;
     private Iterator<Row> joinedRows;
@@ -29,85 +30,79 @@ public class BNLJoinOperator implements Operator {
         this.bm = bm;
         blockPids = new int[blockSize];
         nextBlockPid = -1; // if nextBlockPid is -1 then there are no more rows to read and this.next() == null
+        blockPinned = false;
         outRelation = null;
         sortedRows = null;
         joinedRows = null;
-        // for (int i = 0; i < blockPids.length; ++i) {
-        //     blockPids[i] = -1;
-        // }
-        // outRelation = new Relation("JoinOuterLeftTable", outRowLength, bm, true);
     }
 
     private Row joinRows(Row outer, Row inner) { // the attribute being joined on is put at the front of the row, then the remaining attributes of the outer row, then the remaining attributes of the inner row
         int attrLength = inAttr[1] - inAttr[0];
         return new Row(ByteBuffer.allocate(outer.length() + inner.length() - attrLength)
-            .put(inner.getRange(inAttr))
-            .put(outer.getRange(0, outAttr[0]))
-            .put(outer.getRange(outAttr[1]))
-            .put(inner.getRange(0, inAttr[0]))
-            .put(inner.getRange(inAttr[1])).clear());
+            .put(inner.viewRange(inAttr))
+            .put(outer.viewRange(0, outAttr[0]))
+            .put(outer.viewRange(outAttr[1]))
+            .put(inner.viewRange(0, inAttr[0]))
+            .put(inner.viewRange(inAttr[1])).clear());
     }
 
     private void sortIntoHashMap(Row outer) {
-        String attr = row.getString(outAttr);
+        String attr = outer.getString(outAttr);
         if (!sortedRows.containsKey(attr)) {
             sortedRows.put(attr, new ArrayList<Row>());
         }
-        sortedRows.get(attr).add(row); // note that sorted rows could contain uncopied rows, which are connected directly to the byte array in buffer manager. This is ok since the rows won't move around while the block of clean pages is loaded
+        sortedRows.get(attr).add(outer); // note that sorted rows could contain uncopied rows, which are connected directly to the byte array in buffer manager. This is ok since the rows won't move around while the block of clean pages is loaded
     }
 
-    private boolean loadNewBlock() { // returns false if unsuccessful
+    private boolean pinNewBlock() { // returns false if there are no more rows in this operator
         if (nextBlockPid == -1) {
             return false;
         }
         Row currRow = outChild.next();
         if (currRow == null) {
-            outChild.close(); // EOF
             return false;
         }
-        sortedRows = new HashMap<>();
-        insertIntoHashMap(currRow);
-        int nextRowPid = outRelation.insertRow(currRow);
-        if (nextBlockPid != nextRowPid) {
-            throw new IllegalStateException("Unexpected error, insertRow prediction was wrong. (or page only had one row)");
+        if (outRelation == null) {
+            outRelation = new Relation("JoinOuterTable", currRow.length(), bm, true);
         }
+        sortedRows = new HashMap<>();
+        int currRowPid = nextBlockPid; // the pid of the page currRow is from
         for (int i = 0; i < blockPids.length; ++i) {
-            blockPids[i] = nextRowPid;
-            while (nextRowPid == blockPids[i]) {
+            blockPids[i] = currRowPid;
+            while (currRowPid == blockPids[i]) {
+                sortIntoHashMap(currRow);
+                currRowPid = outRelation.insertRow(currRow, true); // this is now pid of upcoming row, the one initialized in the next line
+                if (currRowPid != blockPids[i] && i + 1 == blockPids.length) { // if the next row will be on a new page and we don't have room in this block
+                    break; // skip the next section where we get outChild.next() in this special case
+                }
                 currRow = outChild.next();
                 if (currRow == null) {
-                    nextBlockPid = -1;
-                    outChild.close(); // EOF
                     if (i + 1 < blockPids.length) {
-                        blockPids[i + 1] = -1; // use negative flag so we don't read more pages later on
+                        blockPids[i + 1] = -1; // use negative flag so we don't read more pages when unpinning
                     }
-                    outRelation.getPage(blockPids[i]); // pin
-                    outRelation.markClean(blockPids[i]); // finished writing to this page
+                    outRelation.getPage(blockPids[i]); // pin, finished writing to this page
                     blockPinned = true;
                     return true;
                 }
-                insertIntoHashMap(currRow);
-                nextRowPid = outRelation.insertRow(currRow);
             }
-            outRelation.getPage(blockPids[i]); // pin
-            outRelation.markClean(blockPids[i]); // finished writing to this page
+            outRelation.getPage(blockPids[i]); // pin, finished writing to this page
         }
         blockPinned = true;
-        nextBlockPid = nextRowPid;
+        nextBlockPid = currRowPid;
         return true;
     }
 
-    private void unloadBlock() { // make sure that all blockPids before a negative entry are actually pinned
+    private void unpinBlock() { // make sure that all blockPids before a negative entry are actually pinned
         sortedRows = null;
-        if (!blockPinned) {
+        joinedRows = null;
+        if (!blockPinned) { // this is the only purpose of the blockPinned flag, making sure we don't unpin pages twice
             return;
         }
-        for (int i = 0; i < blockPids.length; ++i) {
-            if (blockPids[i] < 0) {
+        for (int pid : blockPids) {
+            if (pid < 0) {
                 return;
             }
-            outRelation.unpinPage(blockPids[i]);
-            blockPids[i] = -1;
+            outRelation.unpinPage(pid);
         }
         blockPinned = false;
     }
@@ -164,12 +159,10 @@ public class BNLJoinOperator implements Operator {
 
     @Override
     public void close() {
-        unloadBlock();
+        unpinBlock();
         outChild.close();
         inChild.close();
         nextBlockPid = -1;
-        sortedRows = null;
-        joinedRows = null;
     }
 
 }

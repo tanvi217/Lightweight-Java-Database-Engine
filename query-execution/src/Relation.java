@@ -87,7 +87,7 @@ public class Relation {
      * Inserts row, and returns the pageId of the page that will be inserted into on the next call of insertRow(), assuming that the pages are otherwise unchanged.
      * This means we can check if insertRow() filled the last slot in a page, as the pageId returned will be different from the pageId inserted into.
      */
-    public int insertRow(Row nextRow) {
+    public int insertRow(Row nextRow, boolean clean) {
         int lastPid = getPageCount() - 1;
         Page target;
         if (lastPid < 0) {
@@ -105,8 +105,12 @@ public class Relation {
         }
         target.insertRow(nextRow);
         boolean filled = target.isFull();
-        markDirty(lastPid); // lastPid is same as targetPid at this point
-        unpinPage(lastPid);
+        if (clean) {
+            markClean(lastPid);
+        } else {
+            markDirty(lastPid); 
+        }
+        unpinPage(lastPid); // lastPid is same as targetPid at this point
         return filled ? lastPid + 1 : lastPid;
     }
 

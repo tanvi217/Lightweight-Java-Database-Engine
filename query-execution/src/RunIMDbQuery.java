@@ -22,12 +22,10 @@ public class RunIMDbQuery {
 
         // left side of second BNL join
         int[] projMovieId = WorkedOn.movieId; // the movieId range was unchanged by the projection
-        int projRowLength = Movies.movieId[1] + People.personId[1]; // works since these ranges come first in their relations
         int firstBlockSize = 8; // TODO calculate
         Operator firstJoin = new BNLJoinOperator(
             selectMovies, projWorkedOn,
             Movies.movieId, projMovieId,
-            movies.rowLength(), projRowLength,
             bm, firstBlockSize
         ); // firstJoin schema: movieId, title, personId
 
@@ -36,12 +34,10 @@ public class RunIMDbQuery {
         
         // final result
         int[] joinedPersonId = new int[] {Movies.title[1], Movies.title[1] + People.personId[1]}; // Movies.title[1] is full length of movieId + title pair
-        int joinedRowLength = Movies.title[1] + People.personId[1];
         int secondBlockSize = 8; // TODO calculate
         Operator secondJoin = new BNLJoinOperator(
             firstJoin, readPeople,
             joinedPersonId, People.personId,
-            joinedRowLength, people.rowLength(),
             bm, secondBlockSize
         ); // secondJoin schema: personId, movieId, title, name
 
