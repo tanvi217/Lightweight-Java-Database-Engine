@@ -219,7 +219,8 @@ public class Relation {
             while (true) {
                 String line = br.readLine();
                 if (line == null) {
-                    throw new IllegalStateException("Table with this title was not found in relations.csv");
+                    return null;
+                    // Table with this title was not found in relations.csv
                 }
                 String[] values = line.split(",");
                 if (values[0].equals(tableTitle)) {

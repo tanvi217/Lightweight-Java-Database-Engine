@@ -1,6 +1,6 @@
 public class RunIMDbQuery {
 
-    private static boolean useMovieIndex = false;
+    private static boolean useMovieIndex = true;
 
     public static void main(String[] args) {
         int bufferSize = args.length < 3 ? 200 : Integer.parseInt(args[2]); // read from input
@@ -58,9 +58,9 @@ public class RunIMDbQuery {
 
         Operator test = projJoined;
         test.open();
-        for (int i = 0; i < 100; ++i) {
+        for (int i = 0; i < 1000; ++i) {
             Row next = test.next();
-            System.out.println(Relation.rowToString(next, titleLength, titleLength + nameLength));
+            System.out.println((i + 1) + " " + Relation.rowToString(next, titleLength, titleLength + nameLength));
             if (next == null) {
                 break;
             }
