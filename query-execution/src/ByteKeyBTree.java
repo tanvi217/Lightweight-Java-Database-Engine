@@ -180,7 +180,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         throw new IllegalArgumentException("Only String, integer, or ByteBuffer keys are supported in ByteKeyBTree");
     }
 
-    public static String toASCII(String input) {
+    private static String toASCII(String input) {
         StringBuilder sb = new StringBuilder();
         for (char c : input.toCharArray()) {
             sb.append(asciiReplacements.getOrDefault(c, c));

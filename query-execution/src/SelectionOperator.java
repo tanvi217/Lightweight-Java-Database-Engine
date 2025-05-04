@@ -1,19 +1,27 @@
+import java.nio.ByteBuffer;
+
 public class SelectionOperator implements Operator {
 
     private Operator child;
     private int[] attr;
-    private String low;
-    private String high;
+    private int rowLength;
+    private ByteBuffer low;
+    private ByteBuffer high;
 
     public SelectionOperator(Operator child, int[] attr, String low, String high) {
         this.child = child;
         this.attr = attr;
-        this.low = ByteKeyBTree.toASCII(low.toLowerCase());
-        this.high = ByteKeyBTree.toASCII(high.toLowerCase());
+        rowLength = attr[1] - attr[0];
+        this.low = ByteKeyBTree.toComparableBytes(low, rowLength);
+        this.high = ByteKeyBTree.toComparableBytes(high, rowLength);
     }
 
     public SelectionOperator(Operator child, int[] attr, String exact) {
-        this(child, attr, exact, exact);
+        this.child = child;
+        this.attr = attr;
+        rowLength = attr[1] - attr[0];
+        low = ByteKeyBTree.toComparableBytes(exact, rowLength);
+        high = low;
     }
 
     @Override
@@ -28,7 +36,7 @@ public class SelectionOperator implements Operator {
             if (row == null) {
                 return null;
             }
-            String inChild = ByteKeyBTree.toASCII(row.getString(attr).toLowerCase());
+            ByteBuffer inChild = ByteKeyBTree.toComparableBytes(row.getString(attr), rowLength);
             if (low.compareTo(inChild) <= 0 && inChild.compareTo(high) <= 0) { // 
                 return row;
             }

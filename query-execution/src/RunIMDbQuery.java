@@ -17,8 +17,10 @@ public class RunIMDbQuery {
         
         // right side of first BNL join
         Operator readWorkedOn = new ScanOperator(workedOn, false);
+        Operator selectWorkedOn = new SelectionOperator(readWorkedOn, WorkedOn.category, "director");
+        Operator projWorkedOn = new ProjectionOperator(selectWorkedOn, bm, WorkedOn.movieId, WorkedOn.personId);
         //////
-        Operator test = readWorkedOn;
+        Operator test = projWorkedOn;
         test.open();
         for (int i = 0; i < 100; ++i) {
             System.out.println(test.next());
@@ -26,8 +28,6 @@ public class RunIMDbQuery {
         test.close();
         if (true) { return; }
         //////
-        Operator selectWorkedOn = new SelectionOperator(readWorkedOn, WorkedOn.category, "director");
-        Operator projWorkedOn = new ProjectionOperator(selectWorkedOn, bm, WorkedOn.movieId, WorkedOn.personId);
 
         // left side of second BNL join
         int[] projMovieId = WorkedOn.movieId; // they happen to be the same after projection

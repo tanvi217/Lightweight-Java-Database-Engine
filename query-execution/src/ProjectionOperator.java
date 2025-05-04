@@ -60,7 +60,7 @@ public class ProjectionOperator implements Operator {
         for (int[] range : srcRanges) {
             newData.put(originalRow.viewRange(range));
         }
-        return new Row(newData);
+        return new Row(newData.clear());
     }
 
     @Override
