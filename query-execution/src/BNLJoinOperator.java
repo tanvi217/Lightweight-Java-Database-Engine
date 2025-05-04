@@ -16,7 +16,7 @@ public class BNLJoinOperator implements Operator {
     private int nextBlockPid;
     private boolean blockPinned;
     private Relation outRelation;
-    private Map<String, List<Row>> sortedRows;
+    private Map<ByteBuffer, List<Row>> sortedRows;
     private Iterator<Row> joinedRows;
 
     public BNLJoinOperator(Operator outChild, Operator inChild, int[] outAttr, int[] inAttr, BufferManager bm, int blockSize) {
@@ -47,7 +47,7 @@ public class BNLJoinOperator implements Operator {
     }
 
     private void sortIntoHashMap(Row outer) {
-        String attr = outer.getString(outAttr);
+        ByteBuffer attr = ByteKeyBTree.toComparableBytes(outer.getString(outAttr), inAttr[1] - inAttr[0]);
         if (!sortedRows.containsKey(attr)) {
             sortedRows.put(attr, new ArrayList<Row>());
         }
@@ -145,7 +145,7 @@ public class BNLJoinOperator implements Operator {
                     return null;
                 }
             } // now we have a valid inner row and a pinned block of outer rows
-            String attr = innerRow.getString(inAttr);
+            ByteBuffer attr = ByteKeyBTree.toComparableBytes(innerRow.getString(inAttr), inAttr[1] - inAttr[0]);
             List<Row> matches = sortedRows.get(attr);
             if (matches == null) { // no matches
                 joinedRows = null;
