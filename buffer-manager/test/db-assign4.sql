@@ -35,8 +35,8 @@ CREATE TABLE people (
 
 \COPY people(personid, name) FROM 'C:/Users/Tanvi/Desktop/people_pre.tsv' WITH (FORMAT csv, DELIMITER E'\t', HEADER true, ENCODING 'UTF8');
 
-\COPY (SELECT TRIM(m.title) AS title, TRIM(p.name)  AS name FROM movies AS m JOIN workedon  AS w ON m.movieid  = w.movieid JOIN people AS p ON w.personid = p.personid WHERE TRIM(m.title) BETWEEN 'A-Hunting We Will Go' AND 'A-Wol' AND TRIM(w.category) = 'director' ORDER BY title, name) TO 'C:/Users/Tanvi/Desktop/verify_output1.csv' WITH (FORMAT csv, HEADER true);
+\COPY (SELECT TRIM(m.title) AS title, TRIM(p.name) AS name FROM movies AS m JOIN workedon AS w ON m.movieid  = w.movieid JOIN people AS p ON w.personid = p.personid WHERE TRIM(m.title) BETWEEN 'Wisd' AND 'Wist' AND TRIM(w.category) = 'director' ORDER BY title, name) TO 'C:/Users/Tanvi/Desktop/verify_output1.csv' WITH (FORMAT csv, HEADER true);
 
-\COPY (  SELECT TRIM(m.title) AS title, TRIM(p.name) AS name FROM movies AS m JOIN workedon  AS w ON m.movieid  = w.movieid JOIN people AS p ON w.personid = p.personid WHERE TRIM(m.title) BETWEEN 'A-Hunting We Will Go' AND 'A Bad Case' AND TRIM(w.category) = 'director' ORDER BY title, name) TO 'C:/Users/Tanvi/Desktop/verify_output2.csv' WITH (FORMAT csv, HEADER true);
+\COPY (SELECT TRIM(m.title) AS title, TRIM(p.name) AS name FROM movies AS m JOIN workedon AS w ON m.movieid  = w.movieid JOIN people AS p ON w.personid = p.personid WHERE TRIM(m.title) BETWEEN 'Billy Bu' AND 'Billz' AND TRIM(w.category) = 'director' ORDER BY title, name) TO 'C:/Users/Tanvi/Desktop/verify_output2.csv' WITH (FORMAT csv, HEADER true);
 
-\COPY ( SELECT TRIM(m.title) AS title, TRIM(p.name)  AS name FROM movies    AS m JOIN workedon  AS w ON m.movieid  = w.movieid JOIN people AS p ON w.personid = p.personid WHERE TRIM(m.title) BETWEEN 'A-Hunting We Will Go' AND 'A Corner in Wheat' AND TRIM(w.category) = 'director' ORDER BY title, name) TO 'C:/Users/Tanvi/Desktop/verify_output3.csv' WITH (FORMAT csv, HEADER true);
+\COPY (SELECT TRIM(m.title) AS title, TRIM(p.name) AS name FROM movies AS m JOIN workedon AS w ON m.movieid  = w.movieid JOIN people AS p ON w.personid = p.personid WHERE TRIM(m.title) BETWEEN 'Close Encounters' AND 'Closer' AND TRIM(w.category) = 'director' ORDER BY title, name) TO 'C:/Users/Tanvi/Desktop/verify_output3.csv' WITH (FORMAT csv, HEADER true);
