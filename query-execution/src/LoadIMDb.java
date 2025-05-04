@@ -9,7 +9,7 @@ public class LoadIMDb {
 
     public static void main(String[] args) {
         int bufferSize = 50;
-        int rows = 400;
+        int rows = 4000;
 
         BufferManager bm = new LRUBufferManager(bufferSize);
         Relation movies = new Movies(bm, false);

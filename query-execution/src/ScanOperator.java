@@ -35,7 +35,7 @@ public class ScanOperator implements Operator {
             throw new IllegalStateException("Unexpected error, next pid was invalid.");
         }
         int sid = nextRid.getSlotId();
-        Page currentPage = keepPinned ? pinned : relation.getPage(pid);
+        Page currentPage = keepPinned ? pinned : relation.getPage(pid); // note that pinned will have been set such that these are the same page
         int height = currentPage.height();
         if (sid >= height) {
             throw new IllegalStateException("Unexpected error, next sid was invalid.");
@@ -70,8 +70,9 @@ public class ScanOperator implements Operator {
         int debugPageId = nextRid == null ? -1 : nextRid.getPageId();
         System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + debugPageId);
         nextRid = null;
-        if (keepPinned) {
+        if (keepPinned && pinned != null) {
             relation.unpinPage(pinned.getId());
+            pinned = null;
         }
     }
 

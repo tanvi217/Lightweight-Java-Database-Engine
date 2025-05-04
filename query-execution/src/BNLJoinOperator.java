@@ -12,6 +12,7 @@ public class BNLJoinOperator implements Operator {
     private int[] outAttr;
     private int[] inAttr;
     private int[] blockPids;
+    private boolean blockPinned;
     private Relation outRelation;
     private int nextBlockPid;
     private Map<String, List<Row>> sortedRows;
@@ -41,6 +42,7 @@ public class BNLJoinOperator implements Operator {
         for (int i = 0; i < blockSize; ++i) {
             blockPids[i] = -1;
         }
+        blockPinned = false;
         outRelation = new Relation("JoinOuterLeftTable", outRowLength, bm, true);
         nextBlockPid = 0;
         sortedRows = null;
@@ -81,28 +83,32 @@ public class BNLJoinOperator implements Operator {
                     if (i + 1 < blockPids.length) {
                         blockPids[i + 1] = -1; // use negative flag so we don't read more pages later on
                     }
-                    outRelation.getPage(blockPids[i]);
+                    outRelation.getPage(blockPids[i]); // pin
                     outRelation.markClean(blockPids[i]); // finished writing to this page
+                    blockPinned = true;
                     return true;
                 }
                 insertIntoHashMap(currRow);
                 nextRowPid = outRelation.insertRow(currRow);
             }
-            outRelation.getPage(blockPids[i]);
+            outRelation.getPage(blockPids[i]); // pin
             outRelation.markClean(blockPids[i]); // finished writing to this page
         }
+        blockPinned = true;
         nextBlockPid = nextRowPid;
         return true;
     }
 
-    private void unloadBlock() {
+    private void unloadBlock() { // make sure that all blockPids before a negative entry are actually pinned
         sortedRows = null;
         for (int i = 0; i < blockPids.length; ++i) {
+            System.out.println("unloading... " + blockPids[i]);
             if (blockPids[i] < 0) {
                 return;
             }
             outRelation.unpinPage(blockPids[i]);
         }
+        blockPinned = false;
     }
 
     @Override
@@ -123,7 +129,9 @@ public class BNLJoinOperator implements Operator {
         Row innerRow = inChild.next();
         if (innerRow == null) { // inner EOF
             inChild.close();
-            unloadBlock();
+            if (blockPinned) {
+                unloadBlock();
+            }
             boolean success = loadNewBlock();
             if (!success) { // outer and inner EOF
                 return null;
@@ -147,7 +155,7 @@ public class BNLJoinOperator implements Operator {
                 joinedData.put(outMatch.viewRange(ranges[1]));
                 joinedData.put(innerRow.viewRange(ranges[2]));
                 joinedData.put(innerRow.viewRange(ranges[3]));
-                joinedList.add(new Row(joinedData));
+                joinedList.add(new Row(joinedData.clear()));
             }
             joinedRows = joinedList.iterator();
         }
@@ -161,6 +169,9 @@ public class BNLJoinOperator implements Operator {
         nextBlockPid = 0;
         sortedRows = null;
         joinedRows = null;
+        if (blockPinned) {
+            unloadBlock();
+        }
         for (int i = 0; i < blockPids.length; ++i) {
             blockPids[i] = -1;
         }

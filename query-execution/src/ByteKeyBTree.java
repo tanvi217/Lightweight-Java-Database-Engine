@@ -183,7 +183,9 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     private static String toASCII(String input) {
         StringBuilder sb = new StringBuilder();
         for (char c : input.toCharArray()) {
-            sb.append(asciiReplacements.getOrDefault(c, c));
+            if (c > 127) {
+                sb.append(asciiReplacements.getOrDefault(c, '?'));
+            }
         }
         return sb.toString();
     }
