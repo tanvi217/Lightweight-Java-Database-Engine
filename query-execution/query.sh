@@ -5,7 +5,9 @@ query1=("'Wisd'" "'Wist'" "'100'")
 query2=("'Billy Bu'" "'Billz'" "'150'")
 query3=("'Close Encounters'" "'Closer'" "'200'")
 
-if [ "$#" -eq 1 ]; then
+if [ "$#" -eq 0 ]; then
+    args="${query1[*]}"
+elif [ "$#" -eq 1 ]; then
     if [ "$1" = "1" ]; then
         args="${query1[*]}"
     elif [ "$1" = "2" ]; then
@@ -23,4 +25,4 @@ fi
 
 echo "run_query ${args[*]}"
 
-ant query_imdb -Dargs="${args[*]}"
+ant query-imdb -Dargs="${args[*]}"
