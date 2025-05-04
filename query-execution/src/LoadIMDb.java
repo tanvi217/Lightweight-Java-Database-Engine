@@ -9,7 +9,7 @@ public class LoadIMDb {
 
     public static void main(String[] args) {
         int bufferSize = 50;
-        int rows = 4000;
+        int rows = 10000;
 
         BufferManager bm = new LRUBufferManager(bufferSize);
         Relation movies = new Movies(bm, false);
@@ -31,7 +31,8 @@ public class LoadIMDb {
             int numInserted = 0;
             while (true) {
                 String line = br.readLine();
-                if (line == null || numInserted >= numRows) {
+                if (line == null || (numRows > 0 && numInserted >= numRows)) {
+                    System.out.println("Loaded " + numInserted + " rows from " + tsvTitle + ".tsv into " + relation.tableTitle + ".bin");
                     break;
                 }
                 boolean skip = false;
@@ -44,7 +45,6 @@ public class LoadIMDb {
                         attrBytes = Arrays.copyOf(attrBytes, range[1] - range[0]);
                         if (range[1] == 9 && relation.tableTitle.contains("Movies")) {
                             skip = true; // only skipping long movieIds
-                            System.out.println("Skipped due to attr: " + values[attrIndices[i]]);
                             break; // out of inner loop only
                         }
                     }
