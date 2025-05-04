@@ -8,8 +8,8 @@ public class SelectionOperator implements Operator {
     public SelectionOperator(Operator child, int[] attr, String low, String high) {
         this.child = child;
         this.attr = attr;
-        this.low = low;
-        this.high = high;
+        this.low = ByteKeyBTree.toASCII(low.toLowerCase());
+        this.high = ByteKeyBTree.toASCII(high.toLowerCase());
     }
 
     public SelectionOperator(Operator child, int[] attr, String exact) {
@@ -28,8 +28,8 @@ public class SelectionOperator implements Operator {
             if (row == null) {
                 return null;
             }
-            String inChild = row.getString(attr);
-            if (low.compareTo(inChild) <= 0 && inChild.compareTo(high) <= 0) {
+            String inChild = ByteKeyBTree.toASCII(row.getString(attr).toLowerCase());
+            if (low.compareTo(inChild) <= 0 && inChild.compareTo(high) <= 0) { // 
                 return row;
             }
         }

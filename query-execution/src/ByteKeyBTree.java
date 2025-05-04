@@ -154,7 +154,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
                 str = toASCII(str);
                 bytes = str.getBytes(StandardCharsets.UTF_8);
                 if (bytes.length != str.length()) {
-                    throw new IllegalArgumentException("ByteKeyBTree doesn't support multi-byte character encodings: " + str);
+                    throw new IllegalArgumentException("ByteKeyBTree multi-byte character encoding error: " + str);
                 }
             }
             return ByteBuffer.wrap(Arrays.copyOf(bytes, length));
@@ -180,7 +180,7 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         throw new IllegalArgumentException("Only String, integer, or ByteBuffer keys are supported in ByteKeyBTree");
     }
 
-    private static String toASCII(String input) {
+    public static String toASCII(String input) {
         StringBuilder sb = new StringBuilder();
         for (char c : input.toCharArray()) {
             sb.append(asciiReplacements.getOrDefault(c, c));

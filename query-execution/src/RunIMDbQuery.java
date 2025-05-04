@@ -9,14 +9,23 @@ public class RunIMDbQuery {
         Relation people = Relation.retrieveFromRelationsCSV("People", bm);
 
         String startRange = "AB"; // read from input
-        String endRange = "AD"; // read from input
+        String endRange = "TV"; // read from input
 
         // left side of first BNL join
         Operator readMovies = new IndexOperator(movies, Movies.title, startRange, bm);
         Operator selectMovies = new SelectionOperator(readMovies, Movies.title, startRange, endRange);
-
+        
         // right side of first BNL join
         Operator readWorkedOn = new ScanOperator(workedOn, false);
+        //////
+        Operator test = readWorkedOn;
+        test.open();
+        for (int i = 0; i < 100; ++i) {
+            System.out.println(test.next());
+        }
+        test.close();
+        if (true) { return; }
+        //////
         Operator selectWorkedOn = new SelectionOperator(readWorkedOn, WorkedOn.category, "director");
         Operator projWorkedOn = new ProjectionOperator(selectWorkedOn, bm, WorkedOn.movieId, WorkedOn.personId);
 
