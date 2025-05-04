@@ -100,8 +100,9 @@ public class BNLJoinOperator implements Operator {
         }
         for (int pid : blockPids) {
             if (pid < 0) {
-                return;
+                break;
             }
+            // System.out.println(outRelation.tableTitle + " page " + pid + " unpinned");
             outRelation.unpinPage(pid);
         }
         blockPinned = false;
@@ -124,37 +125,38 @@ public class BNLJoinOperator implements Operator {
         if (nextBlockPid == -1) {
             return null;
         }
-        if (joinedRows != null && joinedRows.hasNext()) {
-            return joinedRows.next();
+        while (true) {
+            if (joinedRows != null && joinedRows.hasNext()) {
+                return joinedRows.next();
+            }
+            Row innerRow = inChild.next();
+            if (innerRow == null) { // inner EOF
+                unpinBlock();
+                boolean outEOF = !pinNewBlock();
+                if (outEOF) { // outer and inner EOF
+                    nextBlockPid = -1;
+                    return null;
+                }
+                inChild.close();
+                inChild.open();
+                innerRow = inChild.next();
+                if (innerRow == null) { // inChild has no rows, so joined table will also have no rows
+                    nextBlockPid = -1;
+                    return null;
+                }
+            } // now we have a valid inner row and a pinned block of outer rows
+            String attr = innerRow.getString(inAttr);
+            List<Row> matches = sortedRows.get(attr);
+            if (matches == null) { // no matches
+                joinedRows = null;
+            } else {
+                List<Row> joinedList = new ArrayList<>(matches.size());
+                for (Row outerMatch : matches) {
+                    joinedList.add(joinRows(outerMatch, innerRow));
+                }
+                joinedRows = joinedList.iterator();
+            }
         }
-        Row innerRow = inChild.next();
-        if (innerRow == null) { // inner EOF
-            unpinBlock();
-            boolean outEOF = !pinNewBlock();
-            if (outEOF) { // outer and inner EOF
-                nextBlockPid = -1;
-                return null;
-            }
-            inChild.close();
-            inChild.open();
-            innerRow = inChild.next();
-            if (innerRow == null) { // inChild has no rows, so joined table will also have no rows
-                nextBlockPid = -1;
-                return null;
-            }
-        } // now we have a valid inner row and a pinned block of outer rows
-        String attr = innerRow.getString(inAttr);
-        List<Row> matches = sortedRows.get(attr);
-        if (matches == null) { // no matches
-            joinedRows = null;
-        } else {
-            List<Row> joinedList = new ArrayList<>(matches.size());
-            for (Row outerMatch : matches) {
-                joinedList.add(joinRows(outerMatch, innerRow));
-            }
-            joinedRows = joinedList.iterator();
-        }
-        return next();
     }
 
     @Override

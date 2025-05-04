@@ -1,5 +1,7 @@
 public class RunIMDbQuery {
 
+    private static boolean useMovieIndex = false;
+
     public static void main(String[] args) {
         int bufferSize = args.length < 3 ? 200 : Integer.parseInt(args[2]); // read from input
 
@@ -8,11 +10,17 @@ public class RunIMDbQuery {
         Relation workedOn = Relation.retrieveFromRelationsCSV("WorkedOn", bm);
         Relation people = Relation.retrieveFromRelationsCSV("People", bm);
 
-        String startRange = args.length < 1 ? "AB" : args[0]; // read from input
-        String endRange = args.length < 2 ? "CD" : args[1]; // read from input
+        String startRange = args.length < 1 ? "Wisd" : args[0]; // read from input
+        String endRange = args.length < 2 ? "Wist" : args[1]; // read from input
 
         // left side of first BNL join
-        Operator readMovies = new IndexOperator(movies, Movies.title, startRange, bm);
+
+        Operator readMovies;
+        if (useMovieIndex) {
+            readMovies = new IndexOperator(movies, Movies.title, startRange, bm);
+        } else {
+            readMovies = new ScanOperator(movies, true);
+        }
         Operator selectMovies = new SelectionOperator(readMovies, Movies.title, startRange, endRange);
         
         // right side of first BNL join
@@ -22,7 +30,7 @@ public class RunIMDbQuery {
 
         // left side of second BNL join
         int[] projMovieId = WorkedOn.movieId; // the movieId range was unchanged by the projection
-        int firstBlockSize = 8; // TODO calculate
+        int firstBlockSize = (bufferSize - 10) / 2; // TODO calculate
         Operator firstJoin = new BNLJoinOperator(
             selectMovies, projWorkedOn,
             Movies.movieId, projMovieId,
@@ -34,7 +42,7 @@ public class RunIMDbQuery {
         
         // final result
         int[] joinedPersonId = new int[] {Movies.title[1], Movies.title[1] + People.personId[1]}; // Movies.title[1] is full length of movieId + title pair
-        int secondBlockSize = 8; // TODO calculate
+        int secondBlockSize = firstBlockSize;
         Operator secondJoin = new BNLJoinOperator(
             firstJoin, readPeople,
             joinedPersonId, People.personId,
@@ -45,16 +53,20 @@ public class RunIMDbQuery {
         int[] joinedName = new int[] {Movies.title[1] + People.personId[1], Movies.title[1] + People.name[1]};
         Operator projJoined = new ProjectionOperator(secondJoin, joinedTitle, joinedName);
 
+        int titleLength = Movies.title[1] - Movies.title[0];
+        int nameLength = People.name[1] - People.name[0];
+
         Operator test = projJoined;
         test.open();
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < 100; ++i) {
             Row next = test.next();
-            System.out.println(next);
+            System.out.println(Relation.rowToString(next, titleLength, titleLength + nameLength));
             if (next == null) {
                 break;
             }
         }
         test.close();
+
     }
 
 }

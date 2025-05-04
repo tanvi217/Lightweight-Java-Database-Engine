@@ -12,6 +12,7 @@
     <property name="junit.jar" value="${labs.lib}/junit-4.13.2.jar"/>
     <property name="hamcrest.jar" value="${labs.lib}/hamcrest-core-1.3.jar"/>
     <property name="main-method-class" value="Movies"/>
+    <property name="args" value=""/>
 
     <target name="init">
         <mkdir dir="${labs.qe.build}"/>

@@ -128,6 +128,21 @@ public class Relation {
         }
     }
 
+    public static String rowToString(Row row, int... rangeEnds) {
+        if (row == null) {
+            return "null row";
+        }
+        StringBuilder sb = new StringBuilder();
+        int rangeStart = 0;
+        for (int end : rangeEnds) {
+            sb.append(row.getString(rangeStart, end));
+            sb.append(',');
+            rangeStart = end;
+        }
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
+    }
+
     /**
      * Returns a string formatted to be used in the data directory's relations.csv
      * file. The tableTitle, number of pages accounted for by the buffer manager,
