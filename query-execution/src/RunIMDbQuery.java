@@ -1,15 +1,15 @@
 public class RunIMDbQuery {
 
     public static void main(String[] args) {
-        int bufferSize = 200; // read from input
+        int bufferSize = args.length < 3 ? 200 : Integer.parseInt(args[2]); // read from input
 
         BufferManager bm = new LRUBufferManager(bufferSize);
         Relation movies = Relation.retrieveFromRelationsCSV("Movies", bm);
         Relation workedOn = Relation.retrieveFromRelationsCSV("WorkedOn", bm);
         Relation people = Relation.retrieveFromRelationsCSV("People", bm);
 
-        String startRange = "AB"; // read from input
-        String endRange = "TV"; // read from input
+        String startRange = args.length < 1 ? "AB" : args[0]; // read from input
+        String endRange = args.length < 2 ? "CD" : args[1]; // read from input
 
         // left side of first BNL join
         Operator readMovies = new IndexOperator(movies, Movies.title, startRange, bm);

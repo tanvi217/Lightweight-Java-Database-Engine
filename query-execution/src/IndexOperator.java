@@ -70,7 +70,7 @@ public class IndexOperator implements Operator {
         }
         int pid = next.getPageId();
         int sid = next.getSlotId();
-        Row retrieved = relation.getPage(pid).getRow(sid); // Note that it is not copied
+        Row retrieved = relation.getPage(pid).getRow(sid).copy(); // copied since we unpin in the next line
         relation.unpinPage(pid);
         return retrieved;
     }

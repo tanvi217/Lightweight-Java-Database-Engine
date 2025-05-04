@@ -42,6 +42,7 @@ public class ScanOperator implements Operator {
         }
         Row next = currentPage.getRow(sid); // Note that the row is not copied and subject to change, is this OK? otherwise call .copy() on this variable and return the result
         if (!keepPinned) {
+            next = next.copy();
             relation.unpinPage(pid);
         }
         ++sid;
