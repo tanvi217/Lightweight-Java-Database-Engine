@@ -68,7 +68,6 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        bm.force();
     }
     
     public ByteKeyBTree(int bytesInKey, BufferManager bm, boolean debugPrinting) {
