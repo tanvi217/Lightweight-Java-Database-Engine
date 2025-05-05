@@ -2,7 +2,11 @@ import matplotlib.pyplot as plt
 
 # sample data for the plot - replace with actual data for measured IO
 selectivities = [2.6972e-5, 2.0435e-5, 2.4893e-5]
-measuredIOs = [1676990, 1676991, 1676992]
+# first entry acheived from running ant query-imdb -Dargs="'Wisd' 'Wissenschaft' '200'"
+#second entry acheived from running ant query-imdb -Dargs="'Billy Bubbles' 'Billys Nightmare' '200'"
+# third entry acheived from running ant query-imdb -Dargs="'Close Encounters' 'Closer' '200'"
+# all had line System.out.println("Number of IOs "+ (movies.numIOs+people.numIOs+workedOn.numIOs)); at the bottom of RunIMDbQuery.java UNCOMMENTED
+measuredIOs = [11042581, 11042581, 11042581]
 estimatedIOs = [1676995, 1676987, 1676994]
 
 plt.plot(selectivities, measuredIOs, marker='o', label='Measured I/O')

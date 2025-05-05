@@ -76,7 +76,7 @@ public class BNLJoinOperator implements Operator {
                     break; // skip the next section where we get outChild.next() in this special case
                 }
                 currRow = outChild.next();
-                System.out.println(currRow);
+                //System.out.println(currRow);
                 if (currRow == null) {
                     if (i + 1 < blockPids.length) {
                         blockPids[i + 1] = -1; // use negative flag so we don't read more pages when unpinning

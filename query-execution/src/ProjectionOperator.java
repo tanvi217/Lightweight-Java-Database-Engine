@@ -10,8 +10,10 @@ public class ProjectionOperator implements Operator {
     private boolean onTheFly;
     private boolean materialized;
     private Operator tempTableScan;
-    private Relation projected;
+    private Relation projected; 
+    public int IOcost = 0; //public for IO cost purposes
     private int rowLength;
+
 
     private static int getRowLength(int[][] ranges) {
         int length = 0;
@@ -65,6 +67,9 @@ public class ProjectionOperator implements Operator {
 
     @Override
     public Row next() {
+        if(projected!=null){
+            IOcost = projected.numIOs;
+        }
         if (onTheFly) {
             return nextFromChild();
         }
