@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 
-# sample data for the plot - replace with actual data
-selectivities = [5, 10, 15]
-measuredIOs = [100, 105, 110]
-estimatedIOs = [100, 105, 110]
+# sample data for the plot - replace with actual data for measured IO
+selectivities = [2.6972e-5, 2.0435e-5, 2.4893e-5]
+measuredIOs = [1676990, 1676991, 1676992]
+estimatedIOs = [1676995, 1676987, 1676994]
 
 plt.plot(selectivities, measuredIOs, marker='o', label='Measured I/O')
 plt.plot(selectivities, estimatedIOs, marker='s', label='Estimated I/O')
