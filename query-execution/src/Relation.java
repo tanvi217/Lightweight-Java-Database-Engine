@@ -87,7 +87,7 @@ public class Relation {
      * Inserts row, and returns the pageId of the page that will be inserted into on the next call of insertRow(), assuming that the pages are otherwise unchanged.
      * This means we can check if insertRow() filled the last slot in a page, as the pageId returned will be different from the pageId inserted into.
      */
-    public int insertRow(Row nextRow) {
+    public int insertRow(Row nextRow, boolean clean) {
         int lastPid = getPageCount() - 1;
         Page target;
         if (lastPid < 0) {
@@ -105,8 +105,12 @@ public class Relation {
         }
         target.insertRow(nextRow);
         boolean filled = target.isFull();
-        markDirty(lastPid); // lastPid is same as targetPid at this point
-        unpinPage(lastPid);
+        if (clean) {
+            markClean(lastPid);
+        } else {
+            markDirty(lastPid); 
+        }
+        unpinPage(lastPid); // lastPid is same as targetPid at this point
         return filled ? lastPid + 1 : lastPid;
     }
 
@@ -122,6 +126,21 @@ public class Relation {
         } else {
             System.out.println(tableTitle + " was not deleted.");
         }
+    }
+
+    public static String rowToString(Row row, int... rangeEnds) {
+        if (row == null) {
+            return "null row";
+        }
+        StringBuilder sb = new StringBuilder();
+        int rangeStart = 0;
+        for (int end : rangeEnds) {
+            sb.append(row.getString(rangeStart, end));
+            sb.append(',');
+            rangeStart = end;
+        }
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
     }
 
     /**
@@ -200,7 +219,8 @@ public class Relation {
             while (true) {
                 String line = br.readLine();
                 if (line == null) {
-                    throw new IllegalStateException("Table with this title was not found in relations.csv");
+                    return null;
+                    // Table with this title was not found in relations.csv
                 }
                 String[] values = line.split(",");
                 if (values[0].equals(tableTitle)) {

@@ -22,7 +22,6 @@ public class ScanOperator implements Operator {
         if (keepPinned) {
             pinned = relation.getPage(0);
         }
-        // System.out.println("Opened table: " + relation.tableTitle + ", pageId: 0, rowLen: " + relation.bytesInRow);
     }
 
     @Override
@@ -40,7 +39,7 @@ public class ScanOperator implements Operator {
         if (sid >= height) {
             throw new IllegalStateException("Unexpected error, next sid was invalid.");
         }
-        Row next = currentPage.getRow(sid); // Note that the row is not copied and subject to change, is this OK? otherwise call .copy() on this variable and return the result
+        Row next = currentPage.getRow(sid).copy();
         if (!keepPinned) {
             relation.unpinPage(pid);
         }
@@ -67,8 +66,6 @@ public class ScanOperator implements Operator {
 
     @Override
     public void close() {
-        int debugPageId = nextRid == null ? -1 : nextRid.getPageId();
-        // System.out.println("Closed table: " + relation.tableTitle + ", pageId: " + debugPageId);
         nextRid = null;
         if (keepPinned && pinned != null) {
             relation.unpinPage(pinned.getId());

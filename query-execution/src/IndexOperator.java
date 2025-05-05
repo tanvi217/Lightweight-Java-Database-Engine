@@ -20,9 +20,16 @@ public class IndexOperator implements Operator {
         nextRids = null;
     }
 
+    public IndexOperator(Relation relation, int[] attr, String startKey, BufferManager bm, boolean useSavedBTree) {
+        this(relation, attr, startKey, bm);
+        bTree = useSavedBTree ? new ByteKeyBTree<>(bm) : null; // this constructor uses saved BTree
+    }
+
     @Override
     public void open() {
-        bTree = new ByteKeyBTree<>(bm, attr);
+        if (bTree == null) {
+            bTree = new ByteKeyBTree<>(bm, attr);
+        }
         ScanOperator scan = new ScanOperator(relation, false);
         scan.open();
         Rid nextRid = scan.getNextRid();
@@ -70,7 +77,7 @@ public class IndexOperator implements Operator {
         }
         int pid = next.getPageId();
         int sid = next.getSlotId();
-        Row retrieved = relation.getPage(pid).getRow(sid); // Note that it is not copied
+        Row retrieved = relation.getPage(pid).getRow(sid).copy(); // copied since we unpin in the next line
         relation.unpinPage(pid);
         return retrieved;
     }

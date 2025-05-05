@@ -10,4 +10,10 @@ public class Movies extends Relation {
 
     public Movies(BufferManager bm) { this(bm, false); }
 
+    public static void main(String[] args) {
+        for (String s : args) {
+            System.out.println(s);
+        }
+    }
+
 }

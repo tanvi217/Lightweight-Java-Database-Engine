@@ -79,7 +79,7 @@ public class ProjectionOperator implements Operator {
         projected = new Relation("Projection", attrRanges, bm, true);
         Row nextRow = nextFromChild();
         while (nextRow != null) {
-            projected.insertRow(nextRow);
+            projected.insertRow(nextRow, false);
             nextRow = nextFromChild();
         }
         materialized = true;
