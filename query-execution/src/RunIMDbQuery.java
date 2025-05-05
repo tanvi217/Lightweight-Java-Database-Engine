@@ -16,7 +16,7 @@ public class RunIMDbQuery {
         // left side of first BNL join
 
         Operator readMovies;
-        if (useMovieIndex) {
+        if (useMovieIndex || args.length > 3) {
             boolean useSavedBTree = false;
             readMovies = new IndexOperator(movies, Movies.title, startRange, bm, useSavedBTree);
         } else {
@@ -31,7 +31,7 @@ public class RunIMDbQuery {
 
         // left side of second BNL join
         int[] projMovieId = WorkedOn.movieId; // the movieId range was unchanged by the projection
-        int firstBlockSize = (bufferSize - 10) / 2; // TODO calculate
+        int firstBlockSize = (bufferSize - 10) / 2;
         Operator firstJoin = new BNLJoinOperator(
             selectMovies, projWorkedOn,
             Movies.movieId, projMovieId,
@@ -61,7 +61,7 @@ public class RunIMDbQuery {
         test.open();
         for (int i = 0; i < 1000; ++i) {
             Row next = test.next();
-            System.out.println((i + 1) + " " + Relation.rowToString(next, titleLength, titleLength + nameLength));
+            System.out.println(Relation.rowToString(next, titleLength, titleLength + nameLength));
             if (next == null) {
                 break;
             }

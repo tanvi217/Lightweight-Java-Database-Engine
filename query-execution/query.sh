@@ -31,10 +31,12 @@ elif [ "$#" -eq 1 ]; then
     fi
 elif [ "$#" -eq 2 ]; then
     args=("'$1'" "'$2'" "'200'")
+elif [ "$#" -eq 4 ]; then
+    args=("'$1'" "'$2'" "'$3'" "'$4'")
 else
     args=("'$1'" "'$2'" "'$3'")
 fi
 
 echo "run_query ${args[*]}"
 
-ant query-imdb -Dargs="${args[*]}"
+ant query-imdb -emacs -Dargs="${args[*]}"
