@@ -24,7 +24,7 @@ gunzip data/name.basics.tsv.gz
 cd query-execution
 ant load-imdb
 ```
-4. Use the `query-execution/src/query.sh` shell script to run queries on the loaded data. There are 7 test queries already specified in the script file. These can be called by passing its number as a single argument. The argument for buffer size is optional and defaults to 200. If you cannot run the shell script, an Ant command taking all three arguments can be used instead. The four following commands are all equivalent.
+4. Use the `query-execution/src/query.sh` shell script to run queries on the loaded data. The query is made in the `query-execution/src/RunIMDbQuery.java` file. There are 7 test queries already specified in the script file. These can be called by passing the query's number as a single argument. The argument for buffer size is optional and defaults to 200. If you cannot run the shell script, an Ant command taking all three arguments can be used instead. The four following commands are all equivalent.
 ```sh
 ./query.sh 'Close Encounters' Closer 200
 ./query.sh 'Close Encounters' Closer
