@@ -9,7 +9,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Map.entry;    
+import static java.util.Map.entry;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;    
 
 class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
 
@@ -25,8 +31,46 @@ class ByteKeyBTree<K extends Comparable<K>> implements BTree<K> {
     private BufferManager bm;
     private boolean debugPrinting;
     private int[] ridRange;
-    
 
+    public ByteKeyBTree(BufferManager bm) {
+        String pathToSavedBTree = Constants.DATA_DIRECTORY + "saved_btree.txt";
+        try (BufferedReader br = new BufferedReader(new FileReader(pathToSavedBTree))) {
+            tableTitle = br.readLine();
+            bytesInKey = Integer.parseInt(br.readLine());
+            rootPid = Integer.parseInt(br.readLine());
+            treeDepth = Integer.parseInt(br.readLine());
+            int pageCount = Integer.parseInt(br.readLine());
+            bm.setPageCount(pageCount, tableTitle);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        this.bm = bm;
+        debugPrinting = false;
+        keyRange = new int[] {0, bytesInKey};
+        ridRange = new int[] {bytesInKey, bytesInKey + 8};
+        firstInt = new int[] {bytesInKey, bytesInKey + 4};
+        secondInt = new int[] {bytesInKey + 4, bytesInKey + 8};
+    }
+
+    public void saveToFile() {
+        String pathToSavedBTree = Constants.DATA_DIRECTORY + "saved_btree.txt";
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(pathToSavedBTree))) {
+                bw.write(tableTitle);
+                bw.newLine();
+                bw.write(Integer.toString(bytesInKey));
+                bw.newLine();
+                bw.write(Integer.toString(rootPid));
+                bw.newLine();
+                bw.write(Integer.toString(treeDepth));
+                bw.newLine();
+                bw.write(Integer.toString(bm.getPageCount(tableTitle)));
+                bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        bm.force();
+    }
+    
     public ByteKeyBTree(int bytesInKey, BufferManager bm, boolean debugPrinting) {
         this.bm = bm;
         this.bytesInKey = bytesInKey;
