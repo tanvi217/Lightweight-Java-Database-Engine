@@ -1,7 +1,11 @@
 import java.nio.charset.StandardCharsets;
 
 public class evantest {
+    
     public static void main(String[] args) {
+        System.out.println("Hello from evantest");
+    }}
+        /* 
         Row r = new Row(pad("This is a test ID", Constants.MOVIE_ID_SIZE), pad("This is a test title", Constants.TITLE_SIZE));
         System.out.println(r.toString());
         byte[] temp = r.getAttribute(Constants.MOVIE_ID_SIZE, Constants.TITLE_SIZE);
@@ -240,3 +244,4 @@ public class evantest {
         //should output 2 results
     }
 }
+*/

@@ -77,6 +77,7 @@ public class BNLJoinOperator implements Operator {
             blockPids[i] = nextRowPid;
             while (nextRowPid == blockPids[i]) {
                 currRow = outChild.next();
+                System.out.println(currRow);
                 if (currRow == null) {
                     nextBlockPid = -1;
                     outChild.close(); // EOF
@@ -126,13 +127,16 @@ public class BNLJoinOperator implements Operator {
 
     @Override
     public Row next() {
+        // WRONG, we are not going through the block if it is only partly full, NOT WHAT WE WANT
         if (nextBlockPid == -1) {
             return null;
         }
         if (joinedRows != null && joinedRows.hasNext()) {
+            System.out.println("here");
             return joinedRows.next();
         }
         Row innerRow = inChild.next();
+        System.out.println(innerRow);
         if (innerRow == null) { // inner EOF
             inChild.close();
             unloadBlock();
