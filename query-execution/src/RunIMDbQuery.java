@@ -1,6 +1,6 @@
 public class RunIMDbQuery {
 
-    private static boolean useMovieIndex = true;
+    private static boolean useMovieIndex = false;
 
     public static void main(String[] args) {
         int bufferSize = args.length < 3 ? 200 : Integer.parseInt(args[2]); // read from input
@@ -10,14 +10,15 @@ public class RunIMDbQuery {
         Relation workedOn = Relation.retrieveFromRelationsCSV("WorkedOn", bm);
         Relation people = Relation.retrieveFromRelationsCSV("People", bm);
 
-        String startRange = args.length < 1 ? "Wisd" : args[0]; // read from input
-        String endRange = args.length < 2 ? "Wist" : args[1]; // read from input
+        String startRange = args.length < 1 ? "AB" : args[0]; // read from input
+        String endRange = args.length < 2 ? "CD" : args[1]; // read from input
 
         // left side of first BNL join
 
         Operator readMovies;
         if (useMovieIndex) {
-            readMovies = new IndexOperator(movies, Movies.title, startRange, bm);
+            boolean useSavedBTree = false;
+            readMovies = new IndexOperator(movies, Movies.title, startRange, bm, useSavedBTree);
         } else {
             readMovies = new ScanOperator(movies, true);
         }

@@ -19,6 +19,32 @@ public class LoadIMDb {
         loadTableFromTSV(rows, "title.basics", movies, 0, 2);
         loadTableFromTSV(rows, "title.principals", workedOn, 0, 2, 3);
         loadTableFromTSV(rows, "name.basics", people, 0, 1);
+
+        // below is loading the BTree, but I couldn't figure out why it wasn't working
+        //
+        // int[] sortAttr = Movies.title;
+        // ByteKeyBTree<String> bTree = new ByteKeyBTree<>(bm, sortAttr);
+        // ScanOperator scan = new ScanOperator(movies, false);
+        // scan.open();
+        // Rid nextRid = scan.getNextRid();
+        // int nextPid = nextRid.getPageId();
+        // int nextSid = nextRid.getSlotId();
+        // Row nextRow = scan.next(); // nextPid and nextRid should lead to this row
+        // while (nextRow != null) {
+        //     String attrString = nextRow.getString(sortAttr);
+        //     bTree.insert(attrString, new Rid(nextPid, nextSid));
+        //     nextRid = scan.getNextRid();
+        //     if (nextRid == null) {
+        //         break; // code could be reformatted
+        //     }
+        //     nextPid = nextRid.getPageId();
+        //     nextSid = nextRid.getSlotId();
+        //     nextRow = scan.next();
+        // }
+        // scan.close();
+        // bTree.saveToFile();
+        
+        bm.force();
     }
 
     private static void loadTableFromTSV(int numRows, String tsvTitle, Relation relation, int... attrIndices) {
