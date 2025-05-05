@@ -13,6 +13,7 @@ public class Relation {
     public final String tableTitle;
     public final int[][] attrRanges;
     public final int bytesInRow;
+    public int numIOs = 0;
 
     private BufferManager bm;
     private static String pathToRelationsCSV = Constants.DATA_DIRECTORY + "relations.csv";
@@ -64,10 +65,12 @@ public class Relation {
     }
 
     public Page createPage() {
+        numIOs +=1;
         return bm.createPage(tableTitle, bytesInRow);
     }
 
     public Page getPage(int pid) {
+        numIOs+=1;
         return bm.getPage(pid, tableTitle);
     }
 

@@ -2,6 +2,7 @@ import java.util.Iterator;
 public class Main {
 
     public static void main(String[] args) {
+        /* 
         BufferManager bm = new LRUBufferManager();
         BTree<Integer> tree = new BufferBTree<Integer>(bm, 6, 0, true);
         for (int i = 0; i < 100000; ++i) {
@@ -18,6 +19,8 @@ public class Main {
             ++j;
         }
         System.out.println("Number of matches: " + j);
+        */
+        System.out.println("Empty for now");
     }
-
+        
 }
