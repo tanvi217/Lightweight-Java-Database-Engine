@@ -5,16 +5,16 @@ Lightweight Java database engine that to get hands-on with how storage, indexing
 ## Features
 
 - **Disk-Backed Buffer Manager**  
-  A fixed-size buffer pool with LRU eviction, dirty-page tracking, and pin-counts to coordinate safe concurrent access. Pages are persisted to a binary file at fixed offsets (pageId × pageSize) :contentReference[oaicite:0]{index=0}.
+  A fixed-size buffer pool with LRU eviction, dirty-page tracking, and pin-counts to coordinate safe concurrent access. Pages are persisted to a binary file at fixed offsets
 
 - **B⁺-Tree Index**  
-  A disk-based B⁺-tree layered on the buffer manager, supporting insertions, point queries, and range queries over serialized key–RID entries :contentReference[oaicite:1]{index=1}.
+  A disk-based B⁺-tree layered on the buffer manager, supporting insertions, point queries, and range queries
 
 - **Pipelined Query Executor**  
-  Implements Scan, Selection, Projection and Block Nested-Loop Join operators that stream tuples one at a time and materialize only as needed. Includes I/O cost estimation based on a derived block-nested-loop formula .
+  Implements Scan, Selection, Projection and Block Nested-Loop Join operators that stream tuples one at a time and materialize only as needed.
 
 - **IMDb Dataset Support**  
-  Preprocessors and loaders for IMDb TSV files (`title.basics`, `title.principals`, `name.basics`) so you can benchmark real data.
+  Uses IMDb TSV files (`title.basics`, `title.principals`, `name.basics`) for testing purposes
 
 - **Automated Build & Tests**  
   Apache Ant build scripts, JUnit tests for all components, and example shell wrappers for running end-to-end queries.
@@ -47,8 +47,7 @@ Lightweight Java database engine that to get hands-on with how storage, indexing
 
    ```bash
    cd buffer-manager
-   ant run     # loads title.basics into imdb.bin, demonstrating page eviction
-   ant test    # runs JUnit tests
+   ant run
    cd ..
    ```
 
@@ -56,7 +55,7 @@ Lightweight Java database engine that to get hands-on with how storage, indexing
 
    ```bash
    cd tree-index
-   ant run     # inserts & queries a B⁺-tree over the movie titles
+   ant run
    cd ..
    ```
 
@@ -66,8 +65,6 @@ Lightweight Java database engine that to get hands-on with how storage, indexing
    cd query-execution
    ant load-imdb             # preprocess all three tables into binary pages
    ./src/query.sh 3          # run predefined query #3 (defaults to buffer size 200)
-   # or via Ant:
-   ant query-imdb -Dargs="'Close Encounters' 'Closer' 200"
    ```
 
 ---
